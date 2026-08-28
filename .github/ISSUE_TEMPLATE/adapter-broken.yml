@@ -1,0 +1,49 @@
+---
+name: Adapter broken
+description: Report a streaming service where AutoSkip no longer detects controls
+title: "[adapter] "
+labels: ["adapter", "bug"]
+body:
+  - type: dropdown
+    id: service
+    attributes:
+      label: Streaming service
+      options:
+        - Netflix
+        - Prime Video
+        - Disney+
+        - Apple TV+
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser + version
+      placeholder: Chrome 128
+    validations:
+      required: true
+  - type: dropdown
+    id: action
+    attributes:
+      label: Broken action
+      options:
+        - Skip Intro
+        - Skip Recap
+        - Next Episode / Credits
+        - Still Watching
+        - Multiple
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction notes
+      description: UI language, approximate player state, and what you expected AutoSkip to do.
+    validations:
+      required: true
+  - type: textarea
+    id: dom
+    attributes:
+      label: Optional DOM snippet
+      description: Paste a sanitized button HTML snippet if available (no account data).

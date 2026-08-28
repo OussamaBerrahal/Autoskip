@@ -15,48 +15,59 @@
         </div>
         <label class="switch" title="Enable AutoSkip">
           <input id="enabled" type="checkbox" />
-          <span>ON</span>
+          <span id="enabled-label">ON</span>
         </label>
       </header>
 
       <section class="panel" id="context-panel">
         <div class="row">
-          <span class="muted">Service</span>
-          <strong id="service-name">—</strong>
+          <span class="muted" id="service-label">Service</span>
+          <div class="row-end">
+            <strong id="service-name">—</strong>
+            <label class="mini-switch" title="Enable on this service">
+              <input id="service-enabled" type="checkbox" />
+            </label>
+          </div>
         </div>
         <div class="row">
           <span class="muted">Current series</span>
           <strong id="series-name">Not detected</strong>
         </div>
 
-        <div class="rules" id="series-rules">
+        <div class="rules" id="series-rules" aria-label="Current series rules">
           <label><input type="checkbox" data-scope="series" data-action="intro" /> Skip intros</label>
           <label><input type="checkbox" data-scope="series" data-action="recap" /> Skip recaps</label>
           <label><input type="checkbox" data-scope="series" data-action="credits" /> Skip credits</label>
-          <label><input type="checkbox" data-scope="series" data-action="stillWatching" /> Handle still watching</label>
+          <label><input type="checkbox" data-scope="series" data-action="stillWatching" /> Still watching</label>
         </div>
       </section>
 
       <section class="panel">
         <h2>Service defaults</h2>
-        <div class="rules" id="service-rules">
+        <div class="rules" id="service-rules" aria-label="Service default rules">
           <label><input type="checkbox" data-scope="service" data-action="intro" /> Skip intros</label>
           <label><input type="checkbox" data-scope="service" data-action="recap" /> Skip recaps</label>
           <label><input type="checkbox" data-scope="service" data-action="credits" /> Skip credits</label>
-          <label><input type="checkbox" data-scope="service" data-action="stillWatching" /> Handle still watching</label>
+          <label><input type="checkbox" data-scope="service" data-action="stillWatching" /> Still watching</label>
         </div>
       </section>
 
       <section class="panel stats">
         <h2>This session</h2>
-        <p id="stats-line">0 intros skipped</p>
-        <p class="muted" id="stats-saved">~0s saved</p>
+        <p id="session-stats-line">0 intros skipped</p>
+        <p class="muted" id="session-stats-saved">~0s saved</p>
+        <hr />
+        <h2>Lifetime</h2>
+        <p id="lifetime-stats-line">0 intros · 0 recaps · 0 credits</p>
+        <p class="muted" id="lifetime-stats-saved">~0s saved</p>
       </section>
 
       <footer class="footer">
+        <a id="options-link" href="./options.html" target="_blank" rel="noreferrer">Options</a>
+        <span>·</span>
         <a href="https://github.com/OussamaBerrahal/Autoskip" target="_blank" rel="noreferrer">Source</a>
         <span>·</span>
-        <span>Local-first · No account</span>
+        <span>Local-first</span>
       </footer>
     </main>
     <script type="module" src="./popup.ts"></script>

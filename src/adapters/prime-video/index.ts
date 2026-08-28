@@ -1,22 +1,5 @@
-import type { DetectedAction, StreamingAdapter } from "../../types";
-import {
-  findButtonByLabels,
-  queryFirstVisible,
-  safeClick,
-  toDetectedAction,
-} from "../../engine/dom";
-
-function detect(
-  type: DetectedAction["type"],
-  selectors: string[],
-  labels: string[],
-): DetectedAction | null {
-  const bySelector = queryFirstVisible(selectors);
-  if (bySelector) return toDetectedAction(type, bySelector, "high");
-  const byLabel = findButtonByLabels(labels);
-  if (byLabel) return toDetectedAction(type, byLabel, "medium");
-  return null;
-}
+import type { StreamingAdapter } from "../../types";
+import { clickAction, detectControl, slugTitle, titleFromSelectors } from "../shared";
 
 export const primeVideoAdapter: StreamingAdapter = {
   id: "prime-video",
@@ -25,7 +8,8 @@ export const primeVideoAdapter: StreamingAdapter = {
   matches(url) {
     return (
       /(^|\.)primevideo\.com$/i.test(url.hostname) ||
-      (/(^|\.)amazon\./i.test(url.hostname) && /\/(gp\/)?video\b/i.test(url.pathname))
+      (/(^|\.)amazon\./i.test(url.hostname) &&
+        /\/(gp\/)?video\b|\/detail\//i.test(`${url.pathname}${url.search}`))
     );
   },
 
@@ -35,48 +19,58 @@ export const primeVideoAdapter: StreamingAdapter = {
       params.get("gti") ||
       params.get("asin") ||
       document.querySelector("[data-title-id]")?.getAttribute("data-title-id") ||
-      null
+      document.querySelector("[data-asin]")?.getAttribute("data-asin") ||
+      slugTitle(this.getSeriesTitle())
     );
   },
 
   getSeriesTitle() {
-    return (
-      document.querySelector("h1, [data-automation-id='title']")?.textContent?.trim() ||
-      null
-    );
+    return titleFromSelectors([
+      "[data-automation-id='title']",
+      "h1[data-automation-id]",
+      ".atvwebplayersdk-title-text",
+      "h1",
+    ]);
   },
 
   detectIntro() {
-    return detect(
-      "intro",
-      ['button[aria-label*="Skip" i]', '[class*="skipElement"]'],
-      ["skip intro", "skip", "intro überspringen"],
-    );
+    return detectControl("intro", [
+      ".atvwebplayersdk-skipelement-button",
+      'button[aria-label*="Skip" i]',
+      '[class*="skipElement"] button',
+      '[class*="SkipButton"]',
+    ]);
   },
 
   detectRecap() {
-    return detect("recap", [], ["skip recap", "skip the recap"]);
+    return detectControl("recap", [
+      'button[aria-label*="recap" i]',
+      ".atvwebplayersdk-skipelement-button",
+    ]);
   },
 
   detectCredits() {
-    return detect(
-      "credits",
-      ['button[aria-label*="Next" i]'],
-      ["next episode", "skip credits"],
-    );
+    return detectControl("credits", [
+      ".atvwebplayersdk-nexttitle-button",
+      'button[aria-label*="Next" i]',
+      'button[aria-label*="next episode" i]',
+    ]);
   },
 
   detectStillWatching() {
-    return detect("stillWatching", [], ["continue watching", "are you still watching"]);
+    return detectControl("stillWatching", [
+      'button[aria-label*="Continue" i]',
+      ".atvwebplayersdk-stillwatching-button",
+    ]);
   },
 
   skipIntro(action) {
-    safeClick(action.element);
+    clickAction(action);
   },
   skipRecap(action) {
-    safeClick(action.element);
+    clickAction(action);
   },
   continuePlayback(action) {
-    safeClick(action.element);
+    clickAction(action);
   },
 };

@@ -1,10 +1,26 @@
-import type { ActionPreferences, ActionType, AutoSkipState, RuleSet, ServiceId } from "../types";
-import { DEFAULT_PREFERENCES, DEFAULT_STATE } from "../types";
+import type {
+  ActionPreferences,
+  ActionType,
+  AutoSkipState,
+  RuleSet,
+  ServiceId,
+  StatsBucket,
+} from "../types";
+import {
+  DEFAULT_PREFERENCES,
+  DEFAULT_SERVICES,
+  DEFAULT_STATE,
+  DEFAULT_STATS,
+} from "../types";
 
 const STORAGE_KEY = "autoskip_state_v1";
 
 function cloneDefaultState(): AutoSkipState {
   return structuredClone(DEFAULT_STATE);
+}
+
+function mergeStats(stored?: Partial<StatsBucket>): StatsBucket {
+  return { ...DEFAULT_STATS, ...stored };
 }
 
 export async function loadState(): Promise<AutoSkipState> {
@@ -13,18 +29,26 @@ export async function loadState(): Promise<AutoSkipState> {
   }
 
   const result = await chrome.storage.local.get(STORAGE_KEY);
-  const stored = result[STORAGE_KEY] as AutoSkipState | undefined;
+  const stored = result[STORAGE_KEY] as Partial<AutoSkipState> | undefined;
   if (!stored) return cloneDefaultState();
 
   return {
     ...cloneDefaultState(),
     ...stored,
-    stats: { ...DEFAULT_STATE.stats, ...stored.stats },
+    services: {
+      ...DEFAULT_SERVICES,
+      ...(stored.services ?? {}),
+    },
+    stats: mergeStats(stored.stats),
+    sessionStats: mergeStats(stored.sessionStats),
     serviceRules: stored.serviceRules ?? {},
     seriesRules: stored.seriesRules ?? {},
     sessionRules: pruneExpiredSessions(stored.sessionRules ?? {}),
     manualSkipCounts: stored.manualSkipCounts ?? {},
     dismissedPrompts: stored.dismissedPrompts ?? {},
+    offeredFirstEncounter: stored.offeredFirstEncounter ?? {},
+    debugLogging: stored.debugLogging ?? false,
+    locale: stored.locale ?? "auto",
   };
 }
 
@@ -73,4 +97,11 @@ export function promptKey(
 
 export function emptyPreferences(): ActionPreferences {
   return { ...DEFAULT_PREFERENCES };
+}
+
+export async function resetSessionStats(): Promise<void> {
+  await updateState((state) => ({
+    ...state,
+    sessionStats: { ...DEFAULT_STATS },
+  }));
 }

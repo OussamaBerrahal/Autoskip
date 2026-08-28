@@ -1,14 +1,10 @@
-import type { DetectedAction, StreamingAdapter } from "../../types";
-import {
-  findButtonByLabels,
-  queryFirstVisible,
-  safeClick,
-  toDetectedAction,
-} from "../../engine/dom";
+import type { StreamingAdapter } from "../../types";
+import { clickAction, detectControl, slugTitle, titleFromSelectors } from "../shared";
 
 const INTRO_SELECTORS = [
   '[data-uia="player-skip-intro"]',
   'button[data-uia*="skip-intro"]',
+  '[data-uia="player-skip-intro"] button',
 ];
 
 const RECAP_SELECTORS = [
@@ -20,62 +16,14 @@ const CREDITS_SELECTORS = [
   '[data-uia="next-episode-seamless-button"]',
   '[data-uia="next-episode-button"]',
   'button[data-uia*="next-episode"]',
+  '[data-uia="player-next-episode"]',
 ];
 
 const STILL_WATCHING_SELECTORS = [
   '[data-uia="interrupt-autoplay-continue"]',
-  'button[data-uia*="continue"]',
+  '[data-uia="evidence-overlay-action-primary"]',
+  'button[data-uia*="continue-playing"]',
 ];
-
-const INTRO_LABELS = [
-  "skip intro",
-  "skip the intro",
-  "intro überspringen",
-  "passer l'intro",
-  "omitir intro",
-  "salta intro",
-];
-
-const RECAP_LABELS = [
-  "skip recap",
-  "skip the recap",
-  "recap überspringen",
-  "passer le résumé",
-  "omitir resumen",
-  "salta riepilogo",
-];
-
-const CREDITS_LABELS = [
-  "next episode",
-  "skip credits",
-  "nächste folge",
-  "épisode suivant",
-  "siguiente episodio",
-  "prossimo episodio",
-];
-
-const STILL_WATCHING_LABELS = [
-  "continue watching",
-  "are you still watching",
-  "yes, continue",
-  "weiter ansehen",
-  "continuer à regarder",
-  "seguir viendo",
-];
-
-function detectBySelectorsOrLabels(
-  type: DetectedAction["type"],
-  selectors: string[],
-  labels: string[],
-): DetectedAction | null {
-  const bySelector = queryFirstVisible(selectors);
-  if (bySelector) return toDetectedAction(type, bySelector, "high");
-
-  const byLabel = findButtonByLabels(labels);
-  if (byLabel) return toDetectedAction(type, byLabel, "medium");
-
-  return null;
-}
 
 export const netflixAdapter: StreamingAdapter = {
   id: "netflix",
@@ -88,49 +36,44 @@ export const netflixAdapter: StreamingAdapter = {
   getSeriesId() {
     const path = window.location.pathname;
     const watchMatch = path.match(/\/watch\/(\d+)/);
-    if (watchMatch) return watchMatch[1];
+    if (watchMatch) return watchMatch[1]!;
 
-    const titleEl = document.querySelector('[data-uia="video-title"]');
-    const text = titleEl?.textContent?.trim();
-    return text ? `title:${text.toLowerCase()}` : null;
+    const title = this.getSeriesTitle();
+    return slugTitle(title);
   },
 
   getSeriesTitle() {
-    const titleEl = document.querySelector(
-      '[data-uia="video-title"], .video-title, h4',
-    );
-    return titleEl?.textContent?.trim() || null;
+    return titleFromSelectors([
+      '[data-uia="video-title"]',
+      ".video-title h4",
+      ".video-title",
+      "h4",
+    ]);
   },
 
   detectIntro() {
-    return detectBySelectorsOrLabels("intro", INTRO_SELECTORS, INTRO_LABELS);
+    return detectControl("intro", INTRO_SELECTORS);
   },
 
   detectRecap() {
-    return detectBySelectorsOrLabels("recap", RECAP_SELECTORS, RECAP_LABELS);
+    return detectControl("recap", RECAP_SELECTORS);
   },
 
   detectCredits() {
-    return detectBySelectorsOrLabels("credits", CREDITS_SELECTORS, CREDITS_LABELS);
+    return detectControl("credits", CREDITS_SELECTORS);
   },
 
   detectStillWatching() {
-    return detectBySelectorsOrLabels(
-      "stillWatching",
-      STILL_WATCHING_SELECTORS,
-      STILL_WATCHING_LABELS,
-    );
+    return detectControl("stillWatching", STILL_WATCHING_SELECTORS);
   },
 
   skipIntro(action) {
-    safeClick(action.element);
+    clickAction(action);
   },
-
   skipRecap(action) {
-    safeClick(action.element);
+    clickAction(action);
   },
-
   continuePlayback(action) {
-    safeClick(action.element);
+    clickAction(action);
   },
 };

@@ -17,6 +17,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "apps/extension", "tests"],
-  "exclude": ["dist", "node_modules"]
+  "include": ["src", "apps/extension"],
+  "exclude": ["dist", "node_modules", "tests"]
 }

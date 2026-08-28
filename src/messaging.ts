@@ -11,8 +11,6 @@ export type PopupMessage =
   | { type: "autoskip/get-context" }
   | { type: "autoskip/ping" };
 
-export type BackgroundMessage = PopupMessage;
-
 export type PreferencePatchMessage = {
   type: "autoskip/update-preference";
   scope: "service" | "series" | "session";

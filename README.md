@@ -6,22 +6,25 @@ AutoSkip is a free and open-source Chromium extension that remembers repetitive 
 
 > **You decide once. AutoSkip remembers.**
 
-## Principles
+## Features (V1)
 
-- **User intent before automation** — never configure itself without consent
-- **Reversible by default** — every automatic action can be undone / paused
-- **Context beats globals** — session → series → service rule hierarchy
-- **Local-first and private** — no account, no tracking, no backend for core functionality
-- **Open by default** — MIT licensed, inspectable adapters and permissions
+- **First-encounter prompt** — Skip once · Always for this series · Always on this service
+- **Smart prompt** — learns from repeated manual skips (local only)
+- **Rules hierarchy** — session → series → service
+- **Undo toast** after every automatic action
+- **Session + lifetime time-saved stats**
+- **Per-service enable toggles**
+- **Options page** — locale, debug logging, export/import preferences
+- **Local-first privacy** — no account, tracking, ads, or backend
 
-## Supported platforms (V1)
+## Supported platforms
 
 | Service | Status |
 | --- | --- |
 | Netflix | Supported |
-| Prime Video | Supported (initial selectors) |
-| Disney+ | Supported (initial selectors) |
-| Apple TV+ | Supported (initial selectors) |
+| Prime Video | Supported |
+| Disney+ | Supported |
+| Apple TV+ | Supported |
 | Max / Hulu / Crunchyroll | Contributor wanted |
 
 ## Install (development)
@@ -35,7 +38,8 @@ npm run build
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
 3. **Load unpacked** → select the `dist/` folder
-4. Open a supported streaming site and use the popup to enable Skip Intro for the current series or service
+4. Open a supported streaming site
+5. When Skip Intro appears, choose **Always for this series** (or configure via the popup)
 
 ## How it works
 
@@ -62,6 +66,20 @@ Service default
 Series override
       ↓
 Session override   ← most specific wins
+```
+
+## Project layout
+
+```
+apps/extension/   Chrome MV3 entrypoints (background, content, popup, options)
+src/adapters/     Per-service detection/action adapters
+src/engine/       Detection controller and DOM helpers
+src/rules/        Session / series / service preference resolution
+src/storage/      Local state + statistics
+src/ui/           In-page toast / smart prompt feedback
+src/i18n/         Localized strings + multilingual control labels
+tests/            Unit + fixture integration harness
+docs/             Adapter authoring + release process
 ```
 
 ## Privacy

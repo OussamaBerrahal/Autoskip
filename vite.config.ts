@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
-import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 
 function copyExtensionAssets() {
   return {
@@ -16,17 +16,22 @@ function copyExtensionAssets() {
         recursive: true,
       });
 
-      // Vite emits popup.html under apps/extension/; expose it at dist root for MV3.
-      const nestedPopup = resolve(dist, "apps/extension/popup.html");
+      for (const page of ["popup", "options"]) {
+        const nested = resolve(dist, `apps/extension/${page}.html`);
+        try {
+          let html = readFileSync(nested, "utf8");
+          html = html.replaceAll("../../", "./").replaceAll("../", "./");
+          writeFileSync(resolve(dist, `${page}.html`), html);
+        } catch {
+          // page may already be flattened
+        }
+      }
+
+      // Nested HTML tree is not needed at runtime.
       try {
-        let html = readFileSync(nestedPopup, "utf8");
-        // Nested HTML uses ../../ relative to apps/extension/; root copy needs ./
-        html = html
-          .replaceAll("../../", "./")
-          .replaceAll("../", "./");
-        writeFileSync(resolve(dist, "popup.html"), html);
+        rmSync(resolve(dist, "apps"), { recursive: true, force: true });
       } catch {
-        // popup may already be at root depending on Vite version/input handling
+        // ignore
       }
     },
   };
@@ -48,6 +53,7 @@ export default defineConfig({
         background: resolve(__dirname, "apps/extension/background.ts"),
         content: resolve(__dirname, "apps/extension/content.ts"),
         popup: resolve(__dirname, "apps/extension/popup.html"),
+        options: resolve(__dirname, "apps/extension/options.html"),
       },
       output: {
         entryFileNames: "[name].js",

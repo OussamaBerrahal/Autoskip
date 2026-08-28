@@ -3,7 +3,8 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { findButtonByLabels, isVisible, toDetectedAction } from "../src/engine/dom";
-import { netflixAdapter } from "../src/adapters/netflix";
+import { adapters, netflixAdapter, primeVideoAdapter, disneyPlusAdapter, appleTvAdapter } from "../src/adapters";
+import { detectControl } from "../src/adapters/shared";
 
 function stubVisibleRect() {
   Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", {
@@ -44,21 +45,38 @@ describe("dom helpers", () => {
   });
 });
 
-describe("netflix adapter", () => {
+describe("platform adapters", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
     stubVisibleRect();
   });
 
-  it("matches netflix hosts", () => {
-    expect(netflixAdapter.matches(new URL("https://www.netflix.com/watch/123"))).toBe(true);
-    expect(netflixAdapter.matches(new URL("https://example.com"))).toBe(false);
+  it("registers four V1 adapters", () => {
+    expect(adapters.map((a) => a.id)).toEqual([
+      "netflix",
+      "prime-video",
+      "disney-plus",
+      "apple-tv",
+    ]);
   });
 
-  it("detects skip intro via data-uia", () => {
+  it("matches hostnames", () => {
+    expect(netflixAdapter.matches(new URL("https://www.netflix.com/watch/123"))).toBe(true);
+    expect(primeVideoAdapter.matches(new URL("https://www.primevideo.com/detail/x"))).toBe(true);
+    expect(disneyPlusAdapter.matches(new URL("https://www.disneyplus.com/play/abc"))).toBe(true);
+    expect(appleTvAdapter.matches(new URL("https://tv.apple.com/show/xyz"))).toBe(true);
+  });
+
+  it("detects netflix skip intro via data-uia", () => {
     document.body.innerHTML = `<button data-uia="player-skip-intro">Skip Intro</button>`;
     const action = netflixAdapter.detectIntro();
     expect(action?.type).toBe("intro");
     expect(action?.confidence).toBe("high");
+  });
+
+  it("detects localized skip labels", () => {
+    document.body.innerHTML = `<button aria-label="Intro überspringen">Intro überspringen</button>`;
+    const action = detectControl("intro", []);
+    expect(action?.type).toBe("intro");
   });
 });

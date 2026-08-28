@@ -54,27 +54,45 @@ export interface StatsBucket {
   estimatedMsSaved: number;
 }
 
+export interface ServiceSettings {
+  enabled: boolean;
+}
+
 export interface AutoSkipState {
   enabled: boolean;
+  /** Per-service enable flags. */
+  services: Record<ServiceId, ServiceSettings>;
   /** Service-level defaults keyed by service id. */
   serviceRules: Record<string, RuleSet>;
   /** Series overrides keyed by `${serviceId}::${seriesId}`. */
   seriesRules: Record<string, RuleSet>;
   /** Session overrides keyed by `${serviceId}::${seriesId ?? "unknown"}`. */
   sessionRules: Record<string, RuleSet>;
+  /** Lifetime aggregates. */
   stats: StatsBucket;
-  /** Prompt history to avoid nagging: `${serviceId}::${seriesId}::${actionType}` → count. */
+  /** Resets when the browser session ends (extension memory); also mirrored for popup. */
+  sessionStats: StatsBucket;
+  /** Prompt history: `${serviceId}::${seriesId}::${actionType}` → manual skip count. */
   manualSkipCounts: Record<string, number>;
   dismissedPrompts: Record<string, boolean>;
+  /** First-encounter prompt already shown for a control signature key. */
+  offeredFirstEncounter: Record<string, boolean>;
+  /** Debug logging to extension storage. */
+  debugLogging: boolean;
+  locale: string;
 }
 
 export interface RuntimeContext {
   serviceId: ServiceId | null;
+  serviceName: string | null;
   serviceEnabled: boolean;
   seriesId: string | null;
   seriesTitle: string | null;
   effective: ActionPreferences;
+  serviceDefaults: ActionPreferences;
+  seriesOverrides: ActionPreferences | null;
   stats: StatsBucket;
+  sessionStats: StatsBucket;
 }
 
 export const DEFAULT_PREFERENCES: ActionPreferences = {
@@ -92,14 +110,26 @@ export const DEFAULT_STATS: StatsBucket = {
   estimatedMsSaved: 0,
 };
 
+export const DEFAULT_SERVICES: Record<ServiceId, ServiceSettings> = {
+  netflix: { enabled: true },
+  "prime-video": { enabled: true },
+  "disney-plus": { enabled: true },
+  "apple-tv": { enabled: true },
+};
+
 export const DEFAULT_STATE: AutoSkipState = {
   enabled: true,
+  services: structuredClone(DEFAULT_SERVICES),
   serviceRules: {},
   seriesRules: {},
   sessionRules: {},
   stats: { ...DEFAULT_STATS },
+  sessionStats: { ...DEFAULT_STATS },
   manualSkipCounts: {},
   dismissedPrompts: {},
+  offeredFirstEncounter: {},
+  debugLogging: false,
+  locale: "auto",
 };
 
 /** Rough duration estimates used only for local "time saved" display. */
@@ -109,3 +139,10 @@ export const ESTIMATED_DURATION_MS: Record<ActionType, number> = {
   credits: 45_000,
   stillWatching: 5_000,
 };
+
+export const ACTION_TYPES: ActionType[] = [
+  "intro",
+  "recap",
+  "credits",
+  "stillWatching",
+];

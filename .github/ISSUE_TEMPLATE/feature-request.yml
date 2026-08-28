@@ -1,0 +1,27 @@
+---
+name: Feature request
+description: Suggest an improvement aligned with AutoSkip's core thesis
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What repetitive playback interaction does this remove?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: thesis
+    attributes:
+      label: Product thesis check
+      options:
+        - label: This automates a control the streaming service already exposes
+          required: true
+        - label: This does not require accounts, ads, AI, or remote history collection
+          required: true

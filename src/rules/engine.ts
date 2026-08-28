@@ -16,7 +16,7 @@ export function resolvePreferences(
   serviceId: ServiceId,
   seriesId: string | null,
 ): ActionPreferences {
-  if (!state.enabled) {
+  if (!state.enabled || state.services[serviceId]?.enabled === false) {
     return { ...DEFAULT_PREFERENCES };
   }
 
@@ -57,10 +57,6 @@ export function upsertRule(
   patch: Partial<ActionPreferences>,
 ): AutoSkipState {
   const next = structuredClone(state);
-  const base: ActionPreferences = {
-    ...DEFAULT_PREFERENCES,
-    ...patch,
-  };
 
   if (scope === "service") {
     const existing = next.serviceRules[serviceId];
@@ -73,7 +69,9 @@ export function upsertRule(
   }
 
   if (scope === "series") {
-    if (!seriesId) return state;
+    if (!seriesId) {
+      return upsertRule(state, "service", serviceId, null, null, patch);
+    }
     const key = seriesKey(serviceId, seriesId);
     const existing = next.seriesRules[key];
     next.seriesRules[key] = {
@@ -92,18 +90,35 @@ export function upsertRule(
     serviceId,
     seriesId: seriesId ?? undefined,
     seriesTitle: seriesTitle ?? existing?.seriesTitle,
-    preferences: { ...(existing?.preferences ?? base), ...patch },
+    preferences: { ...(existing?.preferences ?? DEFAULT_PREFERENCES), ...patch },
     updatedAt: Date.now(),
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
   return next;
 }
 
+export function clearSeriesRule(
+  state: AutoSkipState,
+  serviceId: ServiceId,
+  seriesId: string,
+): AutoSkipState {
+  const next = structuredClone(state);
+  delete next.seriesRules[seriesKey(serviceId, seriesId)];
+  return next;
+}
+
 export function setServiceEnabled(
   state: AutoSkipState,
+  serviceId: ServiceId,
   enabled: boolean,
 ): AutoSkipState {
-  return { ...state, enabled };
+  return {
+    ...state,
+    services: {
+      ...state.services,
+      [serviceId]: { enabled },
+    },
+  };
 }
 
 export function getServiceRule(

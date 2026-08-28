@@ -1,8 +1,12 @@
+import { actionNoun, t } from "../i18n/messages";
+import type { ActionType } from "../types";
+
 const TOAST_ID = "autoskip-toast";
 const PROMPT_ID = "autoskip-prompt";
 
 export type ToastOptions = {
   message: string;
+  undoLabel?: string;
   onUndo?: () => void;
   durationMs?: number;
 };
@@ -10,7 +14,9 @@ export type ToastOptions = {
 export type PromptChoice = "once" | "series" | "service" | "dismiss";
 
 export type PromptOptions = {
-  message: string;
+  mode: "first-encounter" | "smart";
+  actionType: ActionType;
+  locale?: string;
   onChoice: (choice: PromptChoice) => void;
 };
 
@@ -27,25 +33,26 @@ function ensureStyles(): void {
       bottom: 28px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       padding: 12px 16px;
-      border-radius: 12px;
-      background: rgba(12, 14, 18, 0.92);
+      border-radius: 14px;
+      background: rgba(12, 18, 22, 0.94);
       color: #f4f6f8;
-      font: 500 13px/1.35 ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(10px);
-      max-width: min(520px, calc(100vw - 32px));
+      font: 500 13px/1.35 "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(12px);
+      max-width: min(560px, calc(100vw - 24px));
     }
     #${PROMPT_ID} {
       bottom: 88px;
       flex-wrap: wrap;
+      row-gap: 8px;
     }
     #${TOAST_ID} button, #${PROMPT_ID} button {
       appearance: none;
       border: 0;
       border-radius: 999px;
-      padding: 6px 12px;
+      padding: 7px 12px;
       font: inherit;
       cursor: pointer;
       background: #e8edf2;
@@ -56,10 +63,17 @@ function ensureStyles(): void {
       color: #d7dde5;
       border: 1px solid rgba(255,255,255,0.18);
     }
+    #${PROMPT_ID} button[data-variant="primary"] {
+      background: #0f6e56;
+      color: #f4fffa;
+    }
     @media (prefers-reduced-motion: no-preference) {
       #${TOAST_ID}, #${PROMPT_ID} {
         animation: autoskip-fade-in 160ms ease-out;
       }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #${TOAST_ID}, #${PROMPT_ID} { animation: none; }
     }
     @keyframes autoskip-fade-in {
       from { opacity: 0; transform: translate(-50%, 8px); }
@@ -85,7 +99,7 @@ export function showToast(options: ToastOptions): void {
   if (options.onUndo) {
     const undo = document.createElement("button");
     undo.type = "button";
-    undo.textContent = "Undo";
+    undo.textContent = options.undoLabel ?? "Undo";
     undo.addEventListener("click", () => {
       options.onUndo?.();
       toast.remove();
@@ -100,30 +114,48 @@ export function showToast(options: ToastOptions): void {
   }, options.durationMs ?? 4_500);
 }
 
-export function showSmartPrompt(options: PromptOptions): void {
+export function showActionPrompt(options: PromptOptions): void {
   ensureStyles();
   document.getElementById(PROMPT_ID)?.remove();
 
+  const locale = options.locale ?? "auto";
+  const noun = actionNoun(options.actionType, locale);
   const prompt = document.createElement("div");
   prompt.id = PROMPT_ID;
   prompt.setAttribute("role", "dialog");
   prompt.setAttribute("aria-label", "AutoSkip preference");
 
   const message = document.createElement("span");
-  message.textContent = options.message;
+  message.textContent = t(
+    options.mode === "first-encounter" ? "prompt.firstEncounter" : "prompt.smart",
+    locale,
+    { action: noun },
+  );
   prompt.appendChild(message);
 
-  const choices: Array<{ label: string; value: PromptChoice; ghost?: boolean }> = [
-    { label: "Always for this series", value: "series" },
-    { label: "Always on this service", value: "service" },
-    { label: "Not now", value: "dismiss", ghost: true },
-  ];
+  const choices: Array<{
+    label: string;
+    value: PromptChoice;
+    variant?: "primary" | "ghost";
+  }> =
+    options.mode === "first-encounter"
+      ? [
+          { label: t("prompt.skipOnce", locale), value: "once", variant: "primary" },
+          { label: t("prompt.alwaysSeries", locale), value: "series" },
+          { label: t("prompt.alwaysService", locale), value: "service" },
+          { label: t("prompt.notNow", locale), value: "dismiss", variant: "ghost" },
+        ]
+      : [
+          { label: t("prompt.alwaysSeries", locale), value: "series", variant: "primary" },
+          { label: t("prompt.alwaysService", locale), value: "service" },
+          { label: t("prompt.notNow", locale), value: "dismiss", variant: "ghost" },
+        ];
 
   for (const choice of choices) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = choice.label;
-    if (choice.ghost) button.dataset.variant = "ghost";
+    if (choice.variant) button.dataset.variant = choice.variant;
     button.addEventListener("click", () => {
       options.onChoice(choice.value);
       prompt.remove();
@@ -134,7 +166,41 @@ export function showSmartPrompt(options: PromptOptions): void {
   document.documentElement.appendChild(prompt);
 }
 
+/** @deprecated use showActionPrompt */
+export function showSmartPrompt(options: {
+  message: string;
+  onChoice: (choice: PromptChoice) => void;
+}): void {
+  ensureStyles();
+  document.getElementById(PROMPT_ID)?.remove();
+  const prompt = document.createElement("div");
+  prompt.id = PROMPT_ID;
+  prompt.setAttribute("role", "dialog");
+  const message = document.createElement("span");
+  message.textContent = options.message;
+  prompt.appendChild(message);
+  for (const choice of [
+    { label: "Always for this series", value: "series" as const },
+    { label: "Always on this service", value: "service" as const },
+    { label: "Not now", value: "dismiss" as const },
+  ]) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = choice.label;
+    button.addEventListener("click", () => {
+      options.onChoice(choice.value);
+      prompt.remove();
+    });
+    prompt.appendChild(button);
+  }
+  document.documentElement.appendChild(prompt);
+}
+
 export function dismissOverlays(): void {
   document.getElementById(TOAST_ID)?.remove();
   document.getElementById(PROMPT_ID)?.remove();
+}
+
+export function isPromptVisible(): boolean {
+  return Boolean(document.getElementById(PROMPT_ID));
 }

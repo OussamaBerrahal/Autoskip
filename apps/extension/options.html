@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AutoSkip Options</title>
+    <link rel="stylesheet" href="./options.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <h1>AutoSkip</h1>
+        <p>Local preferences. No account. No cloud.</p>
+      </header>
+
+      <section class="card">
+        <h2>Services</h2>
+        <div id="services" class="stack"></div>
+      </section>
+
+      <section class="card">
+        <h2>Defaults & behavior</h2>
+        <label class="row">
+          <span>Extension enabled</span>
+          <input id="enabled" type="checkbox" />
+        </label>
+        <label class="row">
+          <span>Debug logging (console)</span>
+          <input id="debug" type="checkbox" />
+        </label>
+        <label class="row">
+          <span>Interface language</span>
+          <select id="locale">
+            <option value="auto">Auto</option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>Statistics</h2>
+        <p id="stats"></p>
+        <div class="actions">
+          <button id="reset-session" type="button">Reset session stats</button>
+          <button id="reset-lifetime" type="button" class="danger">Reset lifetime stats</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Data</h2>
+        <div class="actions">
+          <button id="export" type="button">Export preferences</button>
+          <button id="import" type="button">Import preferences</button>
+          <input id="import-file" type="file" accept="application/json" hidden />
+        </div>
+        <p class="hint">Exports stay on your device. AutoSkip never uploads them.</p>
+      </section>
+
+      <section class="card">
+        <h2>Privacy</h2>
+        <p>
+          AutoSkip stores rules and aggregate skip counts locally in extension storage.
+          It does not create accounts, serve ads, or send viewing history to a server.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="./options.ts"></script>
+  </body>
+</html>

@@ -1,22 +1,5 @@
-import type { DetectedAction, StreamingAdapter } from "../../types";
-import {
-  findButtonByLabels,
-  queryFirstVisible,
-  safeClick,
-  toDetectedAction,
-} from "../../engine/dom";
-
-function detect(
-  type: DetectedAction["type"],
-  selectors: string[],
-  labels: string[],
-): DetectedAction | null {
-  const bySelector = queryFirstVisible(selectors);
-  if (bySelector) return toDetectedAction(type, bySelector, "high");
-  const byLabel = findButtonByLabels(labels);
-  if (byLabel) return toDetectedAction(type, byLabel, "medium");
-  return null;
-}
+import type { StreamingAdapter } from "../../types";
+import { clickAction, detectControl, slugTitle, titleFromSelectors } from "../shared";
 
 export const disneyPlusAdapter: StreamingAdapter = {
   id: "disney-plus",
@@ -27,41 +10,58 @@ export const disneyPlusAdapter: StreamingAdapter = {
   },
 
   getSeriesId() {
-    const match = window.location.pathname.match(/\/(series|play|video)\/([^/]+)/i);
-    return match?.[2] ?? null;
+    const match = window.location.pathname.match(
+      /\/(series|play|video|browse)\/([^/]+)/i,
+    );
+    return match?.[2] ?? slugTitle(this.getSeriesTitle());
   },
 
   getSeriesTitle() {
-    return document.querySelector("h1, [class*='title']")?.textContent?.trim() || null;
+    return titleFromSelectors([
+      "[data-testid='title']",
+      "h1",
+      "[class*='title']",
+    ]);
   },
 
   detectIntro() {
-    return detect(
-      "intro",
-      ['button[aria-label*="Skip" i]', '[data-testid*="skip"]'],
-      ["skip intro", "skip", "intro überspringen"],
-    );
+    return detectControl("intro", [
+      'button[data-testid*="skip"]',
+      'button[aria-label*="Skip" i]',
+      '[class*="skip__button"]',
+      'button[class*="skip"]',
+    ]);
   },
 
   detectRecap() {
-    return detect("recap", [], ["skip recap", "skip the recap"]);
+    return detectControl("recap", [
+      'button[aria-label*="recap" i]',
+      'button[data-testid*="recap"]',
+    ]);
   },
 
   detectCredits() {
-    return detect("credits", [], ["next episode", "skip credits"]);
+    return detectControl("credits", [
+      'button[aria-label*="Next" i]',
+      'button[data-testid*="next"]',
+      'button[aria-label*="next episode" i]',
+    ]);
   },
 
   detectStillWatching() {
-    return detect("stillWatching", [], ["continue watching", "still watching"]);
+    return detectControl("stillWatching", [
+      'button[aria-label*="Continue" i]',
+      'button[data-testid*="continue"]',
+    ]);
   },
 
   skipIntro(action) {
-    safeClick(action.element);
+    clickAction(action);
   },
   skipRecap(action) {
-    safeClick(action.element);
+    clickAction(action);
   },
   continuePlayback(action) {
-    safeClick(action.element);
+    clickAction(action);
   },
 };
