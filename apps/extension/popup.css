@@ -1,0 +1,134 @@
+:root {
+  color-scheme: light;
+  --bg: #e7eef2;
+  --ink: #13202b;
+  --muted: #5a6b78;
+  --panel: rgba(255, 255, 255, 0.78);
+  --line: rgba(19, 32, 43, 0.08);
+  --accent: #0f6e56;
+  --accent-soft: #d5f0e5;
+  --shadow: 0 16px 36px rgba(19, 32, 43, 0.08);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 320px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(15, 110, 86, 0.18), transparent 40%),
+    linear-gradient(165deg, #eef4f7 0%, #dfe9ef 100%);
+  color: var(--ink);
+}
+
+.shell {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.brand {
+  margin: 0;
+  font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  font-size: 26px;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.tagline {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.switch input {
+  accent-color: var(--accent);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+}
+
+.panel h2 {
+  margin: 0 0 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.rules {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rules label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.stats p {
+  margin: 0;
+}
+
+.stats .muted {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.footer {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
