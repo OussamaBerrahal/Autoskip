@@ -18,7 +18,7 @@ AutoSkip handles repetitive streaming playback buttons according to choices you 
 
 • Get started with an explicit choice of streaming apps, or choose as you watch.
 • Choose intro, recap, next-episode, and keep-watching automation separately.
-• Search and manage your saved shows from Settings.
+• Save show choices instantly; search, edit, or remove them right in the popup.
 • Pause for 30 minutes and resume automatically. Follow your system’s light or dark appearance.
 • Use per-series preferences when the player exposes an identifiable series.
 • Keep service defaults and override only the actions you choose.

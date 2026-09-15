@@ -47,7 +47,16 @@ await popup.emulateMedia({ colorScheme: "dark" });
 await popup
   .locator("body")
   .screenshot({ path: "artifacts/popup-dark-preview.png" });
+await popup.getByRole("button", { name: "Your shows" }).click();
+await popup.locator(".show-card summary").click();
+await popup
+  .locator("body")
+  .screenshot({ path: "artifacts/popup-shows-dark-preview.png" });
 await popup.emulateMedia({ colorScheme: "light" });
+await popup
+  .locator("body")
+  .screenshot({ path: "artifacts/popup-shows-preview.png" });
+await popup.getByRole("button", { name: "Watching", exact: true }).click();
 const canvas = await h.context.newPage();
 await canvas.setViewportSize({ width: 1280, height: 800 });
 const icon = readFileSync("apps/extension/icons/icon128.png").toString(

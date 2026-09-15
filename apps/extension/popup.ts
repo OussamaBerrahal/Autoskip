@@ -1,11 +1,9 @@
-import {
-  resolvePreferences,
-  isTemporarilyPaused,
-} from "../../src/rules/engine";
+import { savedPreferences, isTemporarilyPaused } from "../../src/rules/engine";
 import type { ContentContextResponse } from "../../src/messaging";
 import { loadState, seriesKey, sessionKey } from "../../src/storage/state";
 import { mutateState } from "../../src/storage/mutations";
 import type { ActionType, ServiceId } from "../../src/types";
+import { showManager } from "./shows";
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) =>
   document.querySelector<T>(selector)!;
@@ -19,6 +17,23 @@ let activeSeriesTitle: string | null = null;
 let scope: "series" | "service" = "service";
 let lastContext = "";
 let refreshVersion = 0;
+const shows = showManager(document, run);
+
+for (const button of document.querySelectorAll<HTMLButtonElement>(
+  "[data-view]",
+)) {
+  button.addEventListener("click", () => {
+    for (const section of document.querySelectorAll<HTMLElement>(
+      "[data-section]",
+    ))
+      section.hidden = section.dataset.section !== button.dataset.view;
+    for (const item of document.querySelectorAll<HTMLElement>("[data-view]")) {
+      if (item === button) item.setAttribute("aria-current", "page");
+      else item.removeAttribute("aria-current");
+    }
+    statusEl.textContent = "";
+  });
+}
 
 async function refresh(): Promise<void> {
   const version = ++refreshVersion;
@@ -34,6 +49,7 @@ async function refresh(): Promise<void> {
     /* No content script on this tab. */
   }
   if (version !== refreshVersion) return;
+  shows.render(state);
   activeService = context?.serviceId ?? null;
   activeSeriesId = context?.seriesId ?? null;
   activeSeriesTitle = context?.seriesTitle ?? null;
@@ -81,21 +97,15 @@ async function refresh(): Promise<void> {
     : `AutoSkip is off for ${name}.`;
   $("#service-enabled").hidden = !state.enabled || serviceEnabled;
   $("#service-enabled").textContent = `Turn on for ${name}`;
-  const effective = resolvePreferences(
-    {
-      ...state,
-      enabled: true,
-      pausedUntil: 0,
-      services: { ...state.services, [activeService]: { enabled: true } },
-      sessionRules: {},
-    },
+  const effective = savedPreferences(
+    state,
     activeService,
     scope === "series" ? activeSeriesId : null,
   );
   $<HTMLFieldSetElement>("#choices").disabled =
     !state.enabled || !serviceEnabled;
   for (const input of document.querySelectorAll<HTMLInputElement>(
-    "input[data-action]",
+    "#choices input[data-action]",
   )) {
     input.checked = effective[input.dataset.action as ActionType];
   }
@@ -121,11 +131,16 @@ async function refresh(): Promise<void> {
   $("#pause-hint").textContent =
     `${pausedActions.join(", ")} ${pausedActions.length === 1 ? "is" : "are"} paused for now.`;
 }
-function run(action: () => Promise<unknown>) {
+function run(action: () => Promise<unknown>, success = "") {
   statusEl.textContent = "";
+  statusEl.classList.remove("error");
   void action()
-    .then(refresh)
+    .then(async () => {
+      await refresh();
+      statusEl.textContent = success;
+    })
     .catch(() => {
+      statusEl.classList.add("error");
       statusEl.textContent = "Couldn't save that change. Please try again.";
     });
 }
@@ -139,7 +154,14 @@ enabledInput.addEventListener("change", () =>
 );
 scopeSelect.addEventListener("change", () => {
   scope = scopeSelect.value as typeof scope;
-  void refresh();
+  const serviceId = activeService,
+    seriesId = activeSeriesId,
+    seriesTitle = activeSeriesTitle;
+  if (scope === "series" && serviceId && seriesId) {
+    run(() =>
+      mutateState({ kind: "save-series", serviceId, seriesId, seriesTitle }),
+    );
+  } else void refresh();
 });
 $("#service-enabled").addEventListener("click", () => {
   if (activeService) {
@@ -162,7 +184,7 @@ resetSeries.addEventListener("click", () => {
   }
 });
 for (const input of document.querySelectorAll<HTMLInputElement>(
-  "input[data-action]",
+  "#choices input[data-action]",
 )) {
   input.addEventListener("change", () => {
     const serviceId = activeService,

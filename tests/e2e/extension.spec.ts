@@ -1,7 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { test, expect } from "@playwright/test";
-import { launchHarness } from "./harness.mjs";
+import { launchHarness, urls, episodePath } from "./harness.mjs";
 import { DEFAULT_STATE } from "../../src/types";
+const playbackServices = ["netflix", "prime-video", "disney-plus"] as const;
+const serviceNames = {
+  netflix: "Netflix",
+  "prime-video": "Prime Video",
+  "disney-plus": "Disney+",
+};
 
 let h: Awaited<ReturnType<typeof launchHarness>>;
 test.beforeEach(async () => {
@@ -14,39 +20,43 @@ test.afterEach(async () => {
   expect(errors).toEqual([]);
 });
 
-test("installed content script saves a series rule, skips, and really rewinds with Undo", async () => {
-  const page = await h.player();
-  await expect(
-    page.getByRole("button", { name: "Always for this show", exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Always for this show", exact: true })
-    .click();
-  await expect.poll(() => page.evaluate(() => (window as any).clicks)).toBe(1);
-  await expect.poll(async () => (await h.read()).stats.intros).toBe(1);
-  await expect(
-    page.getByRole("button", { name: "Undo", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Undo", exact: true }).click();
-  await expect
-    .poll(() =>
-      page.locator("video").evaluate((v: HTMLVideoElement) => v.currentTime),
-    )
-    .toBeCloseTo(12, 0);
-  await expect.poll(async () => (await h.read()).stats.intros).toBe(0);
-  await expect(page.getByRole("status")).toContainText(
-    "Returned to before the skip",
-  );
-  await page.locator("#skip").evaluate((b: HTMLElement) => {
-    b.hidden = false;
+for (const service of playbackServices) {
+  test(`${service}: installed content script saves a series rule, skips, and really rewinds with Undo`, async () => {
+    const page = await h.player({ service });
+    await expect(
+      page.getByRole("button", { name: "Always for this show", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Always for this show", exact: true })
+      .click();
+    await expect
+      .poll(() => page.evaluate(() => (window as any).clicks))
+      .toBe(1);
+    await expect.poll(async () => (await h.read()).stats.intros).toBe(1);
+    await expect(
+      page.getByRole("button", { name: "Undo", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Undo", exact: true }).click();
+    await expect
+      .poll(() =>
+        page.locator("video").evaluate((v: HTMLVideoElement) => v.currentTime),
+      )
+      .toBeCloseTo(12, 0);
+    await expect.poll(async () => (await h.read()).stats.intros).toBe(0);
+    await expect(page.getByRole("status")).toContainText(
+      "Returned to before the skip",
+    );
+    await page.locator("#skip").evaluate((b: HTMLElement) => {
+      b.hidden = false;
+    });
+    await page.waitForTimeout(1000);
+    expect(await page.evaluate(() => (window as any).clicks)).toBe(1);
+    expect(
+      (await h.read()).seriesRules[`${service}::title:a quiet orbit`]
+        .preferences.intro,
+    ).toBe(true);
   });
-  await page.waitForTimeout(1000);
-  expect(await page.evaluate(() => (window as any).clicks)).toBe(1);
-  expect(
-    (await h.read()).seriesRules["netflix::title:a quiet orbit"].preferences
-      .intro,
-  ).toBe(true);
-});
+}
 
 for (const service of ["netflix", "prime-video", "disney-plus", "apple-tv"]) {
   test(`${service}: recap is not skipped by an intro-only rule`, async () => {
@@ -68,15 +78,17 @@ for (const service of ["netflix", "prime-video", "disney-plus", "apple-tv"]) {
   });
 }
 
-test("unknown series never exposes a series choice or widens the preference", async () => {
-  const page = await h.player({ series: false });
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Always for this show", exact: true }),
-  ).toHaveCount(0);
-  await page.getByRole("button", { name: "Skip once", exact: true }).click();
-  expect((await h.read()).serviceRules).toEqual({});
-});
+for (const service of playbackServices) {
+  test(`${service}: unknown series never exposes a series choice or widens the preference`, async () => {
+    const page = await h.player({ service, series: false });
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Always for this show", exact: true }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: "Skip once", exact: true }).click();
+    expect((await h.read()).serviceRules).toEqual({});
+  });
+}
 
 test("manual learning counts genuine clicks and offers a smart prompt", async () => {
   const page = await h.player();
@@ -100,58 +112,68 @@ test("manual learning counts genuine clicks and offers a smart prompt", async ()
   );
 });
 
-test("service rule survives an episode navigation without duplicate clicks", async () => {
-  const page = await h.player();
-  await page
-    .getByRole("button", { name: "Always on Netflix", exact: true })
-    .click();
-  await expect.poll(async () => (await h.read()).stats.intros).toBe(1);
-  await page.evaluate(() => {
-    history.pushState({}, "", "/watch/1002");
-    document.querySelector<HTMLVideoElement>("video")!.currentTime = 12;
-    document.querySelector<HTMLButtonElement>("#skip")!.hidden = false;
+for (const service of playbackServices) {
+  test(`${service}: service rule survives an episode navigation without duplicate clicks`, async () => {
+    const page = await h.player({ service });
+    await page
+      .getByRole("button", {
+        name: `Always on ${serviceNames[service]}`,
+        exact: true,
+      })
+      .click();
+    await expect.poll(async () => (await h.read()).stats.intros).toBe(1);
+    await page.evaluate(
+      (path) => {
+        history.pushState({}, "", path);
+        document.querySelector<HTMLVideoElement>("video")!.currentTime = 12;
+        document.querySelector<HTMLButtonElement>("#skip")!.hidden = false;
+      },
+      episodePath(service, "episode-2"),
+    );
+    await expect.poll(async () => (await h.read()).stats.intros).toBe(2);
+    await page.waitForTimeout(1000);
+    expect(await page.evaluate(() => (window as any).clicks)).toBe(2);
   });
-  await expect.poll(async () => (await h.read()).stats.intros).toBe(2);
-  await page.waitForTimeout(1000);
-  expect(await page.evaluate(() => (window as any).clicks)).toBe(2);
-});
+}
 
-test("next episode offers Pause this action and never promises a rewind", async () => {
-  const state = structuredClone(DEFAULT_STATE);
-  state.serviceRules.netflix = {
-    serviceId: "netflix",
-    preferences: { credits: true },
-    updatedAt: Date.now(),
-  };
-  await h.seed(state);
-  const page = await h.player({ action: "credits" });
-  await page.waitForTimeout(900);
-  expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
-  await page.locator("video").evaluate(async (v: HTMLVideoElement) => {
-    v.currentTime = 70;
-    v.playbackRate = 8;
-    await v.play();
+for (const service of playbackServices) {
+  test(`${service}: next episode offers Pause this action and never promises a rewind`, async () => {
+    const state = structuredClone(DEFAULT_STATE);
+    state.serviceRules[service] = {
+      serviceId: service,
+      preferences: { credits: true },
+      updatedAt: Date.now(),
+    };
+    await h.seed(state);
+    const page = await h.player({ service, action: "credits" });
+    await page.waitForTimeout(900);
+    expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
+    await page.locator("video").evaluate(async (v: HTMLVideoElement) => {
+      v.currentTime = 70;
+      v.playbackRate = 8;
+      await v.play();
+    });
+    await expect
+      .poll(async () => (await h.read()).stats.credits, { timeout: 15000 })
+      .toBe(1);
+    await expect(
+      page.getByRole("button", { name: "Pause this action", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Undo", exact: true }),
+    ).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Pause this action", exact: true })
+      .click();
+    await expect
+      .poll(
+        async () =>
+          (await h.read()).sessionRules[`${service}::title:a quiet orbit`]
+            ?.preferences.credits,
+      )
+      .toBe(false);
   });
-  await expect
-    .poll(async () => (await h.read()).stats.credits, { timeout: 15000 })
-    .toBe(1);
-  await expect(
-    page.getByRole("button", { name: "Pause this action", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Undo", exact: true }),
-  ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Pause this action", exact: true })
-    .click();
-  await expect
-    .poll(
-      async () =>
-        (await h.read()).sessionRules["netflix::title:a quiet orbit"]
-          ?.preferences.credits,
-    )
-    .toBe(false);
-});
+}
 
 test("options persist settings and reject malformed imports without changing state", async () => {
   const page = await h.context.newPage();
@@ -204,7 +226,7 @@ test("popup reads the active player and restores series defaults", async () => {
   const state = await h.read();
   await h.seed({ ...state, debugLogging: true });
   await expect(popup.locator("#service-name")).toHaveText("Netflix");
-  await expect(popup.locator('[data-action="intro"]')).toBeChecked();
+  await expect(popup.locator('#choices [data-action="intro"]')).toBeChecked();
   // Locator interaction need not focus the popup tab (the real action popup retains its player's tab).
   await popup
     .locator("#reset-series")
@@ -214,18 +236,23 @@ test("popup reads the active player and restores series defaults", async () => {
     .toBe(0);
 });
 
-test("a disabled skip control is never counted as a successful action", async () => {
-  const page = await h.player();
-  await page.locator("#skip").evaluate((button: HTMLButtonElement) => {
-    button.disabled = true;
+for (const service of playbackServices) {
+  test(`${service}: a disabled skip control is never counted as a successful action`, async () => {
+    const page = await h.player({ service });
+    await page.locator("#skip").evaluate((button: HTMLButtonElement) => {
+      button.disabled = true;
+    });
+    await page
+      .getByRole("button", {
+        name: `Always on ${serviceNames[service]}`,
+        exact: true,
+      })
+      .click();
+    await page.waitForTimeout(1000);
+    expect((await h.read()).stats.intros).toBe(0);
+    expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
   });
-  await page
-    .getByRole("button", { name: "Always on Netflix", exact: true })
-    .click();
-  await page.waitForTimeout(1000);
-  expect((await h.read()).stats.intros).toBe(0);
-  expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
-});
+}
 
 test("stale prompt choices after navigation do not change any rules", async () => {
   const page = await h.player();
@@ -242,110 +269,127 @@ test("stale prompt choices after navigation do not change any rules", async () =
   expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
 });
 
-test("disabled service removes its pending prompt and leaves the player alone", async () => {
-  const page = await h.player();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  const state = await h.read();
-  state.services.netflix.enabled = false;
-  await h.seed(state);
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
-});
-
-test("an existing prompt follows the player into and out of fullscreen", async () => {
-  const page = await h.player();
-  await expect(page.getByRole("dialog")).toBeVisible();
-  await page.bringToFront();
-  await page
-    .getByRole("button", { name: "Enter fullscreen", exact: true })
-    .click();
-  await expect(page.locator(".scene #autoskip-prompt")).toBeVisible();
-  await page.evaluate(() => document.exitFullscreen());
-  await expect(page.locator("html > #autoskip-prompt")).toBeVisible();
-});
-
-test("Netflix toolbar cannot advance episodes even with Play next episode enabled", async () => {
-  const state = structuredClone(DEFAULT_STATE);
-  state.serviceRules.netflix = {
-    serviceId: "netflix",
-    preferences: { credits: true },
-    updatedAt: Date.now(),
-  };
-  await h.seed(state);
-  const page = await h.player({ action: "credits", toolbar: true });
-  await page.locator("video").evaluate(async (v: HTMLVideoElement) => {
-    v.currentTime = 70;
-    v.playbackRate = 8;
-    await v.play();
+for (const service of playbackServices) {
+  test(`${service}: disabled service removes its pending prompt and leaves the player alone`, async () => {
+    const page = await h.player({ service });
+    await expect(page.getByRole("dialog")).toBeVisible();
+    const state = await h.read();
+    state.services[service].enabled = false;
+    await h.seed(state);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
   });
-  await page.waitForTimeout(6500);
-  expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
-  expect((await h.read()).stats.credits).toBe(0);
-});
+}
 
-test("resuming several previously watched episodes near their end never causes a chain", async () => {
-  const state = structuredClone(DEFAULT_STATE);
-  state.serviceRules.netflix = {
-    serviceId: "netflix",
-    preferences: { credits: true },
-    updatedAt: Date.now(),
-  };
-  await h.seed(state);
-  const page = await h.player({ action: "credits" });
-  for (let episode = 0; episode < 6; episode++) {
-    await page.evaluate(async (episode) => {
-      history.pushState({}, "", `/watch/resumed-${episode}`);
-      const v = document.querySelector("video")!;
-      v.currentTime = 115;
-      await v.play();
-    }, episode);
-    await page.waitForTimeout(850);
-  }
-  expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
-  expect((await h.read()).stats.credits).toBe(0);
-});
+for (const service of playbackServices) {
+  test(`${service}: an existing prompt follows the player into and out of fullscreen`, async () => {
+    const page = await h.player({ service });
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.bringToFront();
+    await page
+      .getByRole("button", { name: "Enter fullscreen", exact: true })
+      .click();
+    await expect(page.locator(".scene #autoskip-prompt")).toBeVisible();
+    await page.evaluate(() => document.exitFullscreen());
+    await expect(page.locator("html > #autoskip-prompt")).toBeVisible();
+  });
+}
 
-test("a no-effect intro click is attempted once, never counted, and never claims success", async () => {
-  const state = structuredClone(DEFAULT_STATE);
-  state.serviceRules.netflix = {
-    serviceId: "netflix",
-    preferences: { intro: true },
-    updatedAt: Date.now(),
-  };
-  const page = await h.player({ noEffect: true });
-  await h.seed(state);
-  await expect.poll(() => page.evaluate(() => (window as any).clicks)).toBe(1);
-  await page.locator("#skip").evaluate((b: HTMLButtonElement) => {
-    const replacement = b.cloneNode(true) as HTMLButtonElement;
-    replacement.onclick = () => {
-      (window as any).clicks++;
+for (const service of playbackServices) {
+  test(`${service}: toolbar cannot advance episodes even with Play next episode enabled`, async () => {
+    const state = structuredClone(DEFAULT_STATE);
+    state.serviceRules[service] = {
+      serviceId: service,
+      preferences: { credits: true },
+      updatedAt: Date.now(),
     };
-    b.replaceWith(replacement);
+    await h.seed(state);
+    const page = await h.player({ service, action: "credits", toolbar: true });
+    await page.locator("video").evaluate(async (v: HTMLVideoElement) => {
+      v.currentTime = 70;
+      v.playbackRate = 8;
+      await v.play();
+    });
+    await page.waitForTimeout(6500);
+    expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
+    expect((await h.read()).stats.credits).toBe(0);
   });
-  await page.waitForTimeout(3000);
-  expect((await h.read()).stats.intros).toBe(0);
-  expect(await page.evaluate(() => (window as any).clicks)).toBe(1);
-  await expect(page.locator("#autoskip-toast")).toHaveCount(0);
-});
+}
 
-test("Keep watching resumes the paused video without advancing to another episode", async () => {
-  const state = structuredClone(DEFAULT_STATE);
-  state.serviceRules.netflix = {
-    serviceId: "netflix",
-    preferences: { stillWatching: true },
-    updatedAt: Date.now(),
-  };
-  await h.seed(state);
-  const page = await h.player({ action: "stillWatching" });
-  await expect.poll(async () => (await h.read()).stats.stillWatching).toBe(1);
-  await expect
-    .poll(() =>
-      page.locator("video").evaluate((v: HTMLVideoElement) => v.paused),
-    )
-    .toBe(false);
-  expect(page.url()).toContain("/watch/1001");
-  expect((await h.read()).stats.credits).toBe(0);
-});
+for (const service of playbackServices) {
+  test(`${service}: resuming several previously watched episodes near their end never causes a chain`, async () => {
+    const state = structuredClone(DEFAULT_STATE);
+    state.serviceRules[service] = {
+      serviceId: service,
+      preferences: { credits: true },
+      updatedAt: Date.now(),
+    };
+    await h.seed(state);
+    const page = await h.player({ service, action: "credits" });
+    for (let episode = 0; episode < 6; episode++) {
+      await page.evaluate(
+        async (path) => {
+          history.pushState({}, "", path);
+          const v = document.querySelector("video")!;
+          v.currentTime = 115;
+          await v.play();
+        },
+        episodePath(service, `resumed-${episode}`),
+      );
+      await page.waitForTimeout(850);
+    }
+    expect(await page.evaluate(() => (window as any).clicks)).toBe(0);
+    expect((await h.read()).stats.credits).toBe(0);
+  });
+}
+
+for (const service of playbackServices) {
+  test(`${service}: a no-effect intro click is attempted once, never counted, and never claims success`, async () => {
+    const state = structuredClone(DEFAULT_STATE);
+    state.serviceRules[service] = {
+      serviceId: service,
+      preferences: { intro: true },
+      updatedAt: Date.now(),
+    };
+    const page = await h.player({ service, noEffect: true });
+    await h.seed(state);
+    await expect
+      .poll(() => page.evaluate(() => (window as any).clicks))
+      .toBe(1);
+    await page.locator("#skip").evaluate((b: HTMLButtonElement) => {
+      const replacement = b.cloneNode(true) as HTMLButtonElement;
+      replacement.onclick = () => {
+        (window as any).clicks++;
+      };
+      b.replaceWith(replacement);
+    });
+    await page.waitForTimeout(3000);
+    expect((await h.read()).stats.intros).toBe(0);
+    expect(await page.evaluate(() => (window as any).clicks)).toBe(1);
+    await expect(page.locator("#autoskip-toast")).toHaveCount(0);
+  });
+}
+
+for (const service of playbackServices) {
+  test(`${service}: Keep watching resumes the paused video without advancing to another episode`, async () => {
+    const state = structuredClone(DEFAULT_STATE);
+    state.serviceRules[service] = {
+      serviceId: service,
+      preferences: { stillWatching: true },
+      updatedAt: Date.now(),
+    };
+    await h.seed(state);
+    const page = await h.player({ service, action: "stillWatching" });
+    await expect.poll(async () => (await h.read()).stats.stillWatching).toBe(1);
+    await expect
+      .poll(() =>
+        page.locator("video").evaluate((v: HTMLVideoElement) => v.paused),
+      )
+      .toBe(false);
+    expect(page.url()).toBe(urls[service]);
+    expect((await h.read()).stats.credits).toBe(0);
+  });
+}
 
 test("popup has one set of choices and saves only to the selected scope", async () => {
   const player = await h.player({ series: false });
@@ -437,7 +481,7 @@ test("saved shows can be found, edited with the keyboard, and reset to app choic
   expect((await h.read()).serviceRules.netflix.preferences).toEqual({
     intro: true,
   });
-  await page.getByRole("button", { name: "Use my Netflix settings" }).click();
+  await page.getByRole("button", { name: "Remove show settings" }).click();
   await expect
     .poll(async () => Object.keys((await h.read()).seriesRules))
     .toEqual([]);
@@ -576,3 +620,115 @@ test("backup downloads, restores show choices and counts, and can be cancelled s
   expect((await h.read()).stats.intros).toBe(3);
   expect((await h.read()).locale).toBe("fr");
 });
+
+for (const service of playbackServices) {
+  test(`${service}: Only this show immediately saves a persistent, editable popup entry`, async () => {
+    const state = structuredClone(DEFAULT_STATE);
+    state.serviceRules[service] = {
+      serviceId: service,
+      preferences: { intro: true, recap: false },
+      updatedAt: Date.now(),
+    };
+    // The same show name on another app must remain a separate entry.
+    for (const other of playbackServices.filter((id) => id !== service)) {
+      state.seriesRules[`${other}::title:a quiet orbit`] = {
+        serviceId: other,
+        seriesId: "title:a quiet orbit",
+        seriesTitle: "A Quiet Orbit",
+        preferences: { intro: false },
+        updatedAt: Date.now(),
+      };
+    }
+    const player = await h.player({ service, action: "credits" });
+    await h.seed(state);
+    const popup = await h.context.newPage();
+    await popup.goto(`chrome-extension://${h.id}/popup.html`);
+    await player.bringToFront();
+    await h.seed({ ...(await h.read()), locale: "en" });
+    await expect(popup.locator("#scope")).toHaveValue("service");
+    const selectScope = async (value: string) =>
+      popup.locator("#scope").evaluate((el: HTMLSelectElement, value) => {
+        el.value = value;
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      }, value);
+    await selectScope("series");
+    const key = `${service}::title:a quiet orbit`;
+    await expect
+      .poll(async () => (await h.read()).seriesRules[key]?.preferences)
+      .toEqual({
+        intro: true,
+        recap: false,
+        credits: false,
+        stillWatching: false,
+      });
+    await expect(popup.locator("#show-count")).toHaveText("3");
+    // Re-selecting the scope never duplicates or replaces the saved entry.
+    await selectScope("service");
+    await expect(popup.locator("#scope")).toHaveValue("service");
+    await selectScope("series");
+    await expect(popup.locator("#scope")).toHaveValue("series");
+    expect(
+      await popup.locator("body").evaluate((el) => el.scrollHeight),
+    ).toBeLessThanOrEqual(600);
+    await popup.close();
+    const reopened = await h.context.newPage();
+    await reopened.goto(`chrome-extension://${h.id}/popup.html`);
+    await reopened.getByRole("button", { name: "Your shows" }).click();
+    await expect(reopened.locator("#player-settings")).toBeHidden();
+    await expect(reopened.locator(".show-card")).toHaveCount(3);
+    await reopened
+      .getByRole("searchbox", { name: "Find a show" })
+      .fill("missing");
+    await expect(reopened.locator("#shows-empty")).toContainText(
+      "No shows match",
+    );
+    await reopened
+      .getByRole("searchbox", { name: "Find a show" })
+      .fill("quiet");
+    await reopened
+      .getByRole("combobox", { name: "Filter by streaming app" })
+      .selectOption(service);
+    const card = reopened.locator(".show-card");
+    await expect(card).toHaveCount(1);
+    await expect(card.locator("small")).toHaveText(serviceNames[service]);
+    await card.locator("summary").click();
+    expect(
+      await reopened.locator("body").evaluate((el) => el.scrollHeight),
+    ).toBeLessThanOrEqual(600);
+    expect(
+      await reopened.locator("body").evaluate((el) => el.scrollWidth),
+    ).toBe(360);
+    await card
+      .getByRole("switch", { name: "Skip intros", exact: true })
+      .uncheck();
+    for (const name of ["Skip recaps", "Play next episode", "Keep watching"])
+      await card.getByRole("switch", { name, exact: true }).check();
+    await expect
+      .poll(async () => (await h.read()).seriesRules[key]?.preferences)
+      .toEqual({
+        intro: false,
+        recap: true,
+        credits: true,
+        stillWatching: true,
+      });
+    expect((await h.read()).serviceRules).toEqual(state.serviceRules);
+    await reopened.reload();
+    await reopened.getByRole("button", { name: "Your shows" }).click();
+    await reopened
+      .getByRole("combobox", { name: "Filter by streaming app" })
+      .selectOption(service);
+    await card.locator("summary").click();
+    await expect(
+      card.getByRole("switch", { name: "Skip recaps", exact: true }),
+    ).toBeChecked();
+    await card.getByRole("button", { name: "Remove show settings" }).click();
+    await expect
+      .poll(async () => (await h.read()).seriesRules)
+      .toEqual(state.seriesRules);
+    await expect(reopened.locator("#show-count")).toHaveText("2");
+    await expect(reopened.locator("#status")).toContainText(
+      `now uses your ${serviceNames[service]} settings`,
+    );
+    expect((await h.read()).serviceRules).toEqual(state.serviceRules);
+  });
+}

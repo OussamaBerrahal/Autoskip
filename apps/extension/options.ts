@@ -3,12 +3,10 @@ import { summarizeStats } from "../../src/storage/stats";
 import { loadState } from "../../src/storage/state";
 import { mutateState } from "../../src/storage/mutations";
 import { validateImport } from "../../src/storage/validation";
-import {
-  isTemporarilyPaused,
-  resolvePreferences,
-} from "../../src/rules/engine";
-import type { AutoSkipState, ServiceId } from "../../src/types";
+import { isTemporarilyPaused, savedPreferences } from "../../src/rules/engine";
+import type { ServiceId } from "../../src/types";
 import { preferenceFields, updateFields } from "./preferences";
+import { showManager } from "./shows";
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) =>
   document.querySelector<T>(selector)!;
@@ -17,10 +15,8 @@ const debugInput = $<HTMLInputElement>("#debug");
 const localeSelect = $<HTMLSelectElement>("#locale");
 const importFile = $<HTMLInputElement>("#import-file");
 const statusEl = $("#status");
-const search = $<HTMLInputElement>("#show-search");
-const serviceFilter = $<HTMLSelectElement>("#show-service");
 const appFields = new Map<ServiceId, ReturnType<typeof preferenceFields>>();
-let currentState: AutoSkipState | null = null;
+const shows = showManager(document, run);
 let refreshVersion = 0;
 
 const views: Record<string, { title: string; description: string }> = {
@@ -59,7 +55,6 @@ $("#version").textContent =
   `Version ${chrome.runtime.getManifest().version_name ?? chrome.runtime.getManifest().version}`;
 
 for (const adapter of adapters) {
-  serviceFilter.add(new Option(adapter.displayName, adapter.id));
   const card = document.createElement("section");
   card.className = "app-card";
   const heading = document.createElement("div");
@@ -116,133 +111,10 @@ for (const adapter of adapters) {
   card.append(details);
   $("#services").append(card);
 }
-function savedPreferences(
-  state: AutoSkipState,
-  serviceId: ServiceId,
-  seriesId: string | null,
-) {
-  return resolvePreferences(
-    {
-      ...state,
-      enabled: true,
-      pausedUntil: 0,
-      sessionRules: {},
-      services: { ...state.services, [serviceId]: { enabled: true } },
-    },
-    serviceId,
-    seriesId,
-  );
-}
-function renderShows() {
-  const state = currentState;
-  if (!state) return;
-  const container = $("#shows");
-  const opened = new Set(
-    Array.from(
-      container.querySelectorAll<HTMLDetailsElement>("details[open]"),
-    ).map((el) => el.dataset.key),
-  );
-  const focused =
-    document.activeElement instanceof HTMLElement &&
-    container.contains(document.activeElement)
-      ? document.activeElement.id
-      : null;
-  const all = Object.entries(state.seriesRules);
-  $("#show-count").textContent = String(all.length);
-  const query = search.value.trim().toLocaleLowerCase();
-  const results = all
-    .filter(
-      ([, rule]) =>
-        (serviceFilter.value === "all" ||
-          serviceFilter.value === rule.serviceId) &&
-        (rule.seriesTitle ?? "Unnamed show")
-          .toLocaleLowerCase()
-          .includes(query),
-    )
-    .sort(([, a], [, b]) =>
-      (a.seriesTitle ?? "").localeCompare(b.seriesTitle ?? ""),
-    );
-  container.replaceChildren();
-  $("#shows-empty").hidden = results.length > 0;
-  $("#shows-empty").textContent =
-    all.length === 0
-      ? "Your shows will appear here. While watching, open AutoSkip and choose ‘Only this show’ to give it its own settings."
-      : "No shows match. Try another name or streaming app.";
-  for (const [key, rule] of results) {
-    const adapter = adapters.find((a) => a.id === rule.serviceId)!;
-    const card = document.createElement("details");
-    card.className = "show-card";
-    card.dataset.key = key;
-    card.open = opened.has(key);
-    const summary = document.createElement("summary");
-    summary.id = `show-${encodeURIComponent(key)}`;
-    const meta = document.createElement("span");
-    meta.className = "show-meta";
-    const title = document.createElement("span");
-    title.textContent = rule.seriesTitle ?? "Unnamed show";
-    const app = document.createElement("small");
-    app.textContent = adapter.displayName;
-    meta.append(title, app);
-    summary.append(meta);
-    card.append(summary);
-    const note = document.createElement("p");
-    note.className = "show-note";
-    note.textContent =
-      "Changes here apply only to this show. Other choices follow your streaming app's settings.";
-    card.append(note);
-    const fields = document.createElement("fieldset");
-    fields.className = "preference-list";
-    const legend = document.createElement("legend");
-    legend.className = "sr-only";
-    legend.textContent = rule.seriesTitle ?? "Show choices";
-    fields.append(legend);
-    const inputs = preferenceFields(fields, summary.id, (action, checked) =>
-      run(() =>
-        mutateState({
-          kind: "rule",
-          scope: "series",
-          serviceId: rule.serviceId,
-          seriesId: rule.seriesId!,
-          seriesTitle: rule.seriesTitle ?? null,
-          patch: { [action]: checked },
-        }),
-      ),
-    );
-    updateFields(
-      inputs,
-      savedPreferences(state, rule.serviceId, rule.seriesId!),
-    );
-    card.append(fields);
-    const reset = document.createElement("button");
-    reset.type = "button";
-    reset.className = "text-button";
-    reset.id = `${summary.id}-reset`;
-    reset.textContent = `Use my ${adapter.displayName} settings`;
-    reset.addEventListener("click", () =>
-      run(
-        async () => {
-          await mutateState({
-            kind: "clear-series",
-            serviceId: rule.serviceId,
-            seriesId: rule.seriesId!,
-          });
-          search.focus();
-        },
-        `${rule.seriesTitle ?? "This show"} now uses your ${adapter.displayName} settings.`,
-      ),
-    );
-    card.append(reset);
-    container.append(card);
-  }
-  if (focused) document.getElementById(focused)?.focus({ preventScroll: true });
-}
-search.addEventListener("input", renderShows);
-serviceFilter.addEventListener("change", renderShows);
 async function refresh() {
   const version = ++refreshVersion;
   const state = await loadState();
   if (version !== refreshVersion) return;
-  currentState = state;
   enabledInput.checked = state.enabled;
   debugInput.checked = state.debugLogging;
   localeSelect.value = state.locale;
@@ -271,7 +143,7 @@ async function refresh() {
   }
   $("#stats").textContent =
     `Since Chrome opened: ${summarizeStats(state.sessionStats)}\nAll time: ${summarizeStats(state.stats)}`;
-  renderShows();
+  shows.render(state);
 }
 $("#resume-global").addEventListener("click", () =>
   run(() => mutateState({ kind: "settings", patch: { pausedUntil: 0 } })),

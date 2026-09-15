@@ -34,8 +34,22 @@ Owner direction (2026-09-15): make AutoSkip a complete, polished consumer extens
 - Owner reported intro skipping and Undo feedback worked on Netflix/Friends, and six consecutive Next Episode activations.
 - Read-only player inspection found `data-uia="control-next"` available around 3m31s into a ~21m52s episode. The old generic-label fallback matched it.
 - Netflix renders the show name in `[data-uia="video-title"] h4`, then unmounts it when controls hide.
-- The patched extension still needs the owner's manual reload and live playback validation. Automated checks use generated media and simulated streaming pages.
+- The owner reloaded 1.1.0 alpha; the connected popup identified Friends. The owner subsequently confirmed: “the fix works!” for the repeated-advance issue. This is a live Netflix regression confirmation, not a pass for every action or streaming service.
+- Prime Video and Disney+ live player tabs were not open during this follow-up. Their expanded automated checks use generated media and simulated streaming pages.
 
 ## Milestone 2 evidence
 
 Version 1.1.0 alpha: 38 unit/fixture checks and 27 installed-browser checks pass. Covered flows include explicit setup consent, independent per-app settings, keyboard editing of saved shows, reset-to-app choices, pause expiry, responsive dark appearance, and downloaded backup/restore/cancel. The normal popup is 554px high. Runtime permissions remain storage only.
+
+## Milestone 4 — Saved shows in the popup and matching service checks
+
+- [x] Choosing **Only Friends** immediately creates a saved entry, even without changing a switch.
+- [x] Add a **Your shows** popup view with a count, search, streaming-app filter, four editable choices, and removal that restores app defaults.
+- [x] Reuse the show manager in Settings; preserve saved choices and separate identical show names on different apps.
+- [x] Extend the Netflix playback scenarios to Prime Video and Disney+; remove ambiguous Next Episode and Watch recap matching.
+- [x] Complete the expanded browser suite, refresh previews, and build the checksummed package. Hosted CI is tracked on draft PR #2.
+- [ ] Live Prime Video and Disney+ playback checks after opening their players and reloading the new build.
+
+### Milestone 4 evidence
+
+41 unit/fixture tests and all 52 installed-extension scenarios pass locally. An older popup test needed its selector scoped to Watching after the addition of the separate saved-show editor. The final popup checks verify immediate save, persistence, same-name/app isolation, all four editable choices, deletion, and a single-show editor within 600px. The Watching popup with a saved show is 582px high. Previews and the 1.1.0 ZIP match this build; the alpha release remains a draft pending live tests.

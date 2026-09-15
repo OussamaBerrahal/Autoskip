@@ -11,13 +11,17 @@ These are independent opt-in choices. Off does not activate the matching button.
 
 ## Which shows are affected?
 
-The popup has one set of switches and an **Apply to** selector. **All Netflix shows** changes Netflix's general choices. **Only Friends** changes just Friends. A show-specific choice overrides the corresponding general choice; the other actions continue to use the general choices. **Use my Netflix settings** removes that show's overrides.
+The popup has one set of switches and an **Apply to** selector. **All Netflix shows** changes Netflix's general choices. **Only Friends** immediately saves the current four choices for Friends and adds it to **Your shows**, even before a switch changes. Later edits apply just to Friends. Selecting an already saved show preserves its previous choices. **Use my Netflix settings** removes that show's saved choices.
+
+The popup’s **Your shows** view stays available on any browser tab. Search by title, filter by streaming app, open a show to edit its four choices, or choose **Remove show settings** to restore the app defaults. Changes save automatically and survive closing Chrome. The same title on different apps has separate entries. Settings → Your shows uses this same list.
+
+Older rules and choices made through an in-player prompt may specify only one action; their remaining actions continue to follow the app defaults. Temporary pauses are kept separate from saved choices.
 
 If Netflix's title controls disappear, AutoSkip remembers the title for the current episode. A different episode URL must expose its own title before AutoSkip uses a show-specific preference. Unknown titles still allow the user to explicitly choose general settings.
 
 ## End-of-episode safety
 
-- Netflix requires a recognized end-card marker; a generic “Next Episode” label is insufficient.
+- Netflix, Prime Video, and Disney+ require an adapter-specific next-episode marker; a generic “Next Episode” label is insufficient. The Prime/Disney markers still require live player validation.
 - Playback must be within the last 5% of the video, capped at 60 seconds, or have ended naturally. Paused credits are left alone.
 - At least 30 seconds of continuous media progress must have been observed for that episode. Seeking does not count. Resuming a watched episode at its saved ending does not immediately advance.
 - Only one attempt is made per action/episode for intros, recaps, and next episode, even if a button is replaced.
@@ -48,4 +52,4 @@ Version 1.0.0 counted dispatched clicks, so six counts establish six activations
 
 ## Verification boundary
 
-The owner reported live intro skipping and Undo feedback working. The toolbar/title observations above came from the connected Netflix player. Automated regression tests use an installed extension with generated media and simulated service pages. The patched build still needs manual reload and live Netflix end-card, recap, Undo, and fullscreen verification; other streaming services also require live validation.
+The owner reported live intro skipping and Undo feedback working. The toolbar/title observations above came from the connected Netflix player. Automated regression tests use an installed extension with generated media and simulated service pages. After reloading 1.1.0 alpha, the owner confirmed that the Netflix repeated-advance fix works. The remaining Netflix action/fullscreen checks and live Prime Video/Disney+ checks are still pending. Automated passes do not establish compatibility with current DRM players.

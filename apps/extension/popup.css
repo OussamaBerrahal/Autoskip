@@ -1,4 +1,5 @@
 @import "./theme.css";
+@import "./shows.css";
 
 * {
   box-sizing: border-box;
@@ -93,7 +94,7 @@ input:focus-visible + .track {
   font-weight: 650;
 }
 .watching {
-  padding: 24px 0 19px;
+  padding: 17px 0 14px;
 }
 .eyebrow {
   display: flex;
@@ -169,7 +170,7 @@ fieldset {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 14px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--line);
 }
 .choice:last-child {
@@ -319,4 +320,120 @@ a:hover {
   .track {
     display: none;
   }
+}
+
+.view-nav {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-top: 18px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.view-nav button {
+  flex: 1;
+  border: 0;
+  padding: 7px 4px;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--muted);
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.view-nav button[aria-current] {
+  background: var(--bg);
+  color: var(--accent);
+  box-shadow: 0 1px 3px #0001;
+}
+#show-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 4px;
+  margin-left: 4px;
+  background: var(--surface);
+  border-radius: 5px;
+  font-size: 10px;
+}
+#status:not(:empty) {
+  margin-top: 12px;
+}
+.shows-heading {
+  padding-top: 14px;
+}
+.shows-heading h1 {
+  font-size: 24px;
+}
+.show-filters {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.show-filters input,
+.show-filters select {
+  min-width: 0;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 9px 8px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.show-filters input {
+  width: 100%;
+}
+.show-filters select {
+  width: 110px;
+  flex: none;
+}
+.show-card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 14px;
+  border-radius: 10px;
+  margin-bottom: 9px;
+}
+.show-card summary {
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.show-card summary:focus-visible,
+.show-filters input:focus-visible,
+.preference input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.preference {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.preference:last-child {
+  border-bottom: 0;
+}
+.preference-copy {
+  display: grid;
+  gap: 5px;
+}
+.preference-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+.preference-help {
+  /* Full descriptions are available in Watching and Settings. Keep editing compact. */
+  display: none;
+}
+.preference input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--toggle);
+  flex: none;
+  cursor: pointer;
 }

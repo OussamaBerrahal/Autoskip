@@ -17,7 +17,8 @@ For a fresh checkout: `npm ci && npm run build`.
 
 - Fresh installation opens the welcome page. Nothing skips until you choose; selecting only Netflix must not set skip choices on other apps.
 - In the popup, choose **Only Friends** or **All Netflix shows** and verify there is one set of switches.
-- Open Settings → **Your shows**, find Friends, change a choice, then restore its Netflix settings.
+- Choose **Only Friends**, close/reopen the popup, and check **Your shows**: Friends should be listed even if no switch was changed.
+- In **Your shows**, search/filter, open Friends, change any of its four choices, then choose **Remove show settings**. Friends disappears and follows your Netflix defaults; other shows and apps stay unchanged. Check the same list in Settings.
 - Click **Pause for 30 min**. All AutoSkip actions/prompts pause; **Resume AutoSkip** restores saved choices. Turning **Off** remains off without a timer.
 - Check light/dark appearance and keyboard navigation. The ordinary popup should fit without scrolling.
 - Save a backup, restore it, and verify show choices and counts survive. Cancelling a restore leaves data intact.
@@ -77,6 +78,12 @@ Repeat for Netflix, Prime Video, Disney+, and Apple TV+. Treat the rows as indep
 
 If a control is missed, note the service, action, UI language, Chrome version, and what happened. Settings → Troubleshooting → Diagnostic logging adds local console messages. Do not share authentication tokens or account details.
 
+## Live evidence recorded
+
+On 2026-09-15 the owner confirmed that the Netflix/Friends repeated-advance fix works after reloading 1.1.0 alpha. Earlier live feedback confirmed intro skipping and the Undo notification. This does not mark every Netflix scenario above as complete. Prime Video and Disney+ have no live pass recorded yet.
+
 ## What is already automated
 
 `npm run check` runs unit tests, type checking, a production build, package checks, and a real Chromium extension test suite. Browser tests load the production `dist/` with real Chrome extension storage/messaging and simulated service pages. They do not validate the current private/DRM streaming players. No live service pass is claimed until the table above is completed.
+
+The same installed-extension scenarios now run for Netflix, Prime Video, and Disney+: intro/Undo and count reversal, separate recap handling, unknown-show scope, app choices across episodes, legitimate next-episode behavior, toolbar exclusion, six resumed endings without a chain, ineffective/disabled clicks, Keep watching without navigation, disabling a service, fullscreen, and the popup save/search/edit/remove flow. Simulated episode URLs stay within each service’s playback route.

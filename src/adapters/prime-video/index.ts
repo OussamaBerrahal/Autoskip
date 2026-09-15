@@ -35,14 +35,17 @@ export const primeVideoAdapter: StreamingAdapter = {
   },
 
   detectRecap() {
-    return detectControl("recap", ['button[aria-label*="recap" i]']);
+    return detectControl("recap", []);
   },
 
   detectCredits() {
-    return detectControl("credits", [
-      ".atvwebplayersdk-nexttitle-button",
-      'button[aria-label*="next episode" i]',
-    ]);
+    // A generic Next Episode label can belong to the regular player toolbar.
+    return detectControl(
+      "credits",
+      [".atvwebplayersdk-nexttitle-button"],
+      [],
+      false,
+    );
   },
 
   detectStillWatching() {

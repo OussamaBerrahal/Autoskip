@@ -139,3 +139,15 @@ it("keeps Netflix's show title when controls hide, without using the episode tit
   history.replaceState({}, "", "/watch/different-show");
   expect(netflixAdapter.getSeriesTitle()).toBeNull();
 });
+
+it.each([primeVideoAdapter, disneyPlusAdapter])(
+  "$displayName ignores ambiguous Next Episode and Watch recap controls",
+  (adapter) => {
+    stubVisibleRect();
+    document.body.innerHTML =
+      '<button aria-label="Next Episode">Next Episode</button><button aria-label="Watch intro">Watch intro</button><button aria-label="Watch recap">Watch recap</button>';
+    expect(adapter.detectCredits()).toBeNull();
+    expect(adapter.detectIntro()).toBeNull();
+    expect(adapter.detectRecap()).toBeNull();
+  },
+);

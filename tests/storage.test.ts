@@ -124,3 +124,43 @@ it("loads older backups without a pause and validates pause timestamps", () => {
   expect(() => validateImport({ ...old, pausedUntil: "later" })).toThrow();
   expect(() => validateImport({ ...old, pausedUntil: -1 })).toThrow();
 });
+
+it("saving a show captures persistent choices, preserves existing rules, and never widens unknown shows", () => {
+  const state = upsertRule(
+    structuredClone(DEFAULT_STATE),
+    "service",
+    "netflix",
+    null,
+    null,
+    { intro: true, recap: true },
+  );
+  state.enabled = false;
+  state.pausedUntil = Date.now() + 60000;
+  state.services.netflix.enabled = false;
+  state.sessionRules["netflix::friends"] = {
+    serviceId: "netflix",
+    seriesId: "friends",
+    preferences: { intro: false },
+    updatedAt: Date.now(),
+  };
+  const mutation = {
+    kind: "save-series" as const,
+    serviceId: "netflix" as const,
+    seriesId: "friends",
+    seriesTitle: "Friends",
+  };
+  const saved = applyMutation(state, mutation);
+  expect(saved.seriesRules["netflix::friends"].preferences).toEqual({
+    intro: true,
+    recap: true,
+    credits: false,
+    stillWatching: false,
+  });
+  const edited = upsertRule(saved, "series", "netflix", "friends", "Friends", {
+    intro: false,
+  });
+  expect(applyMutation(edited, mutation)).toEqual(edited);
+  expect(applyMutation(state, { ...mutation, seriesId: null })).toEqual(state);
+  expect(saved.serviceRules).toEqual(state.serviceRules);
+  expect(saved.sessionRules).toEqual(state.sessionRules);
+});

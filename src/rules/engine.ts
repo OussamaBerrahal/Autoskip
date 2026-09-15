@@ -11,6 +11,25 @@ import { seriesKey, sessionKey } from "../storage/state";
 
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 
+/** Show saved choices even when playback is disabled or temporarily paused. */
+export function savedPreferences(
+  state: AutoSkipState,
+  serviceId: ServiceId,
+  seriesId: string | null,
+): ActionPreferences {
+  return resolvePreferences(
+    {
+      ...state,
+      enabled: true,
+      pausedUntil: 0,
+      sessionRules: {},
+      services: { ...state.services, [serviceId]: { enabled: true } },
+    },
+    serviceId,
+    seriesId,
+  );
+}
+
 export function resolvePreferences(
   state: AutoSkipState,
   serviceId: ServiceId,

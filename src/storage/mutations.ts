@@ -8,12 +8,13 @@ import type {
 import { DEFAULT_STATS } from "../types";
 import {
   clearSeriesRule,
+  savedPreferences,
   setServiceEnabled,
   upsertRule,
 } from "../rules/engine";
 import { recordSkip, removeSkip } from "./stats";
 import { validateImport } from "./validation";
-import { sessionKey } from "./state";
+import { seriesKey, sessionKey } from "./state";
 
 export type RuleContext = {
   serviceId: ServiceId;
@@ -32,6 +33,7 @@ export type StateMutation =
     }
   | { kind: "setup"; serviceIds: ServiceId[] }
   | { kind: "service"; serviceId: ServiceId; enabled: boolean }
+  | ({ kind: "save-series" } & RuleContext)
   | ({
       kind: "rule";
       scope: RuleScope;
@@ -67,6 +69,20 @@ export function applyMutation(
     }
     case "service":
       return setServiceEnabled(state, mutation.serviceId, mutation.enabled);
+    case "save-series": {
+      const { serviceId, seriesId, seriesTitle } = mutation;
+      // Selecting an existing show must never overwrite its previous choices.
+      if (!seriesId || state.seriesRules[seriesKey(serviceId, seriesId)])
+        return state;
+      return upsertRule(
+        state,
+        "series",
+        serviceId,
+        seriesId,
+        seriesTitle,
+        savedPreferences(state, serviceId, null),
+      );
+    }
     case "rule":
       return upsertRule(
         state,

@@ -11,7 +11,7 @@ AutoSkip is a free and open-source Chromium extension that remembers repetitive 
 ## Features (V1)
 
 - **Welcome setup** — explicitly enable intro/recap skipping on the streaming apps you choose
-- **Saved shows** — search and edit show-specific choices in Settings
+- **Saved shows** — save immediately, then search, edit, or remove choices directly in the popup
 - **Pause for 30 minutes** — resume automatically without losing your choices
 - **Light/dark appearance** — follows your system, with keyboard-friendly controls
 - **First-encounter prompt** — Skip once · Always for this show · Always on Netflix

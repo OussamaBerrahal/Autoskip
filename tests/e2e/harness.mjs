@@ -24,6 +24,10 @@ wav.write("data", 36);
 wav.writeUInt32LE(pcm.length, 40);
 pcm.copy(wav, 44);
 
+export function episodePath(service, episode) {
+  return new URL(urls[service]).pathname.replace(/[^/]+$/, String(episode));
+}
+
 export function playerHtml({
   service = "netflix",
   action = "intro",
@@ -47,10 +51,14 @@ export function playerHtml({
     "prime-video": {
       intro: 'class="atvwebplayersdk-skipelement-button"',
       recap: 'class="atvwebplayersdk-skipelement-button"',
+      credits: 'class="atvwebplayersdk-nexttitle-button"',
+      stillWatching: 'class="atvwebplayersdk-stillwatching-button"',
     },
     "disney-plus": {
-      intro: 'data-testid="skip-button"',
-      recap: 'data-testid="skip-button"',
+      intro: 'data-testid="skip-intro"',
+      recap: 'data-testid="skip-recap"',
+      credits: 'data-testid="next-episode"',
+      stillWatching: 'data-testid="still-watching"',
     },
     "apple-tv": {
       intro: 'data-testid="skip-button"',
@@ -66,8 +74,8 @@ export function playerHtml({
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>AutoSkip demo player</title><style>
   *{box-sizing:border-box}body{margin:0;background:#101d22;color:#f3faf7;font-family:Arial,sans-serif}header{padding:35px 64px;display:flex;justify-content:space-between;align-items:center}header b{font-size:24px;letter-spacing:-1px}header span{color:#9ab0a7;font-size:13px}.scene{margin:0 64px;position:relative;height:550px;background:radial-gradient(ellipse at 70% 35%,#365a51,#172c32 65%);border:1px solid #416057;border-radius:20px;overflow:hidden}.copy{position:absolute;left:44px;top:35px;z-index:1}.copy p{color:#a7bfb4;font-size:12px;letter-spacing:3px}.copy h1{font-size:48px;letter-spacing:-2px;margin:16px 0}.copy small{color:#b0c4bc}video{position:absolute;width:100%;height:100%;opacity:.18}#skip{position:absolute;right:40px;bottom:50px;border:1px solid #9db6aa;background:#ecf5f0;color:#172923;padding:13px 22px;border-radius:8px;font:600 15px Arial;cursor:pointer}footer{padding:22px 64px;color:#9ab0a7;font-size:13px;display:flex;justify-content:space-between}.demo{color:#64cda9}#fullscreen{position:absolute;right:40px;bottom:14px;background:none;border:0;color:#b0c4bc;font:11px Arial;cursor:pointer}
   </style></head><body><header><b>AutoSkip <span class="demo">/ demo player</span></b><span>Example content · No streaming account connected</span></header>
-  <main class="scene"><video src="/autoskip-fixture.wav" preload="auto" muted></video><div class="copy"><p>AN EXAMPLE SERIES</p><h1 ${series ? seriesAttr : ""}>A Quiet Orbit</h1><small>Season 1 · Episode 1</small></div><button id="skip" ${toolbar ? 'data-uia="control-next"' : (selectors[service]?.[action] ?? "")} aria-label="${labels[action]}">${labels[action]}</button><button id="fullscreen" aria-label="Enter fullscreen">Full screen</button></main><footer><span>You decide once. AutoSkip remembers.</span><span>Local preferences · No account · No tracking</span></footer>
-  <script>document.querySelector('#fullscreen').addEventListener('click',()=>document.querySelector('.scene').requestFullscreen());window.clicks=0;document.querySelector('#skip').addEventListener('click',()=>{window.clicks++;const v=document.querySelector('video');${noEffect ? "" : action === "credits" ? `history.pushState({},'', '/watch/1002');v.currentTime=0;document.querySelector('#skip').hidden=true;` : action === "stillWatching" ? `v.play();document.querySelector('#skip').hidden=true;` : `v.currentTime=102;document.querySelector('#skip').hidden=true;`}});</script></body></html>`;
+  <main class="scene"><video src="/autoskip-fixture.wav" preload="auto" muted></video><div class="copy"><p>AN EXAMPLE SERIES</p><h1 ${series ? seriesAttr : ""}>A Quiet Orbit</h1><small>Season 1 · Episode 1</small></div><button id="skip" ${toolbar ? (service === "netflix" ? 'data-uia="control-next"' : "") : (selectors[service]?.[action] ?? "")} aria-label="${labels[action]}">${labels[action]}</button><button id="fullscreen" aria-label="Enter fullscreen">Full screen</button></main><footer><span>You decide once. AutoSkip remembers.</span><span>Local preferences · No account · No tracking</span></footer>
+  <script>document.querySelector('#fullscreen').addEventListener('click',()=>document.querySelector('.scene').requestFullscreen());window.clicks=0;document.querySelector('#skip').addEventListener('click',()=>{window.clicks++;const v=document.querySelector('video');${noEffect ? "" : action === "credits" ? `history.pushState({},'', '${episodePath(service, "episode-2")}');v.currentTime=0;document.querySelector('#skip').hidden=true;` : action === "stillWatching" ? `v.play();document.querySelector('#skip').hidden=true;` : `v.currentTime=102;document.querySelector('#skip').hidden=true;`}});</script></body></html>`;
 }
 export async function launchHarness(options = {}) {
   const extension = resolve("dist");

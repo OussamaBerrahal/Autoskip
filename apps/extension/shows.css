@@ -1,0 +1,37 @@
+.show-card > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  list-style: none;
+}
+.show-card > summary::after {
+  content: "+";
+  font-size: 18px;
+  color: var(--muted);
+}
+.show-card[open] > summary::after {
+  content: "−";
+}
+.show-card > summary::-webkit-details-marker {
+  display: none;
+}
+.show-meta {
+  display: grid;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+.show-meta small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.show-card > .text-button {
+  margin-top: 14px;
+}
+.show-note {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 14px 0 0;
+}

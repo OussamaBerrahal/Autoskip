@@ -23,24 +23,20 @@ export const disneyPlusAdapter: StreamingAdapter = {
   },
 
   detectIntro() {
-    return detectControl("intro", [
-      'button[data-testid*="skip-intro"]',
-      'button[aria-label*="intro" i]',
-    ]);
+    return detectControl("intro", ['button[data-testid*="skip-intro"]']);
   },
 
   detectRecap() {
-    return detectControl("recap", [
-      'button[aria-label*="recap" i]',
-      'button[data-testid*="recap"]',
-    ]);
+    return detectControl("recap", ['button[data-testid*="skip-recap"]']);
   },
 
   detectCredits() {
-    return detectControl("credits", [
-      'button[data-testid*="next-episode"]',
-      'button[aria-label*="next episode" i]',
-    ]);
+    return detectControl(
+      "credits",
+      ['button[data-testid="next-episode"]'],
+      [],
+      false,
+    );
   },
 
   detectStillWatching() {
