@@ -3,84 +3,106 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AutoSkip Options</title>
+    <title>AutoSkip · Settings</title>
     <link rel="stylesheet" href="./options.css" />
   </head>
   <body>
     <main class="page">
       <header>
-        <h1>AutoSkip</h1>
-        <p>Local preferences. No account. No cloud.</p>
+        <p class="brand">⏵⏵ AutoSkip</p>
+        <h1>Make yourself comfortable.</h1>
+        <p>Your settings, saved automatically on this device.</p>
       </header>
-
       <p id="status" class="hint" role="status" aria-live="polite"></p>
       <section class="card">
-        <h2>Services</h2>
-        <div id="services" class="stack"></div>
-      </section>
-
-      <section class="card">
-        <h2>Defaults & behavior</h2>
-        <label class="row">
-          <span>Extension enabled</span>
-          <input id="enabled" type="checkbox" />
-        </label>
-        <label class="row">
-          <span>Debug logging (console)</span>
-          <input id="debug" type="checkbox" />
-        </label>
-        <label class="row">
-          <span>In-player prompt language</span>
-          <select id="locale">
-            <option value="auto">Auto</option>
+        <h2>The essentials</h2>
+        <label class="row"
+          ><span>AutoSkip on</span><input id="enabled" type="checkbox"
+        /></label>
+        <label class="row"
+          ><span>Messages while watching</span
+          ><select id="locale">
+            <option value="auto">Match my browser</option>
             <option value="en">English</option>
             <option value="de">Deutsch</option>
             <option value="fr">Français</option>
             <option value="es">Español</option>
-          </select>
-        </label>
+          </select></label
+        >
       </section>
-
       <section class="card">
-        <h2>Statistics</h2>
-        <p id="stats"></p>
-        <div class="actions">
-          <button id="reset-session" type="button">Reset session stats</button>
-          <button id="reset-lifetime" type="button" class="danger">
-            Reset lifetime stats
-          </button>
-        </div>
+        <h2>Where AutoSkip works</h2>
+        <p class="hint">
+          Choose your streaming apps. To choose what gets skipped, open AutoSkip
+          while watching a show.
+        </p>
+        <div id="services" class="stack"></div>
       </section>
-
       <section class="card">
-        <h2>Data</h2>
+        <h2>Your choices, kept safe</h2>
+        <p class="hint">
+          Save a copy of your settings to move them to another browser or
+          restore them later.
+        </p>
         <div class="actions">
-          <button id="export" type="button">Export preferences</button>
-          <button id="import" type="button">Import preferences</button>
-          <input
+          <button id="export" type="button">Save a backup</button
+          ><button id="import" type="button" class="secondary">
+            Restore a backup</button
+          ><input
             id="import-file"
             type="file"
             accept="application/json"
             hidden
           />
         </div>
-        <button id="reset-all" type="button" class="danger">
-          Reset all local data
-        </button>
+      </section>
+      <details class="card">
+        <summary>Activity &amp; resets</summary>
+        <p id="stats"></p>
         <p class="hint">
-          Exports include series preferences, prompt learning, and statistics.
-          Exports stay on your device. AutoSkip never uploads them.
+          Counts from older versions may include clicks that didn't change
+          playback. Undo removes the skip from your count. One-time skips aren't
+          included.
         </p>
-      </section>
-
-      <section class="card">
-        <h2>Privacy</h2>
-        <p>
-          AutoSkip stores rules and aggregate skip counts locally in extension
-          storage. It does not create accounts, serve ads, or send viewing
-          history to a server.
+        <div class="actions">
+          <button id="reset-session" class="secondary" type="button">
+            Clear current count</button
+          ><button id="reset-lifetime" class="secondary" type="button">
+            Clear all counts
+          </button>
+        </div>
+        <div class="divider">
+          <h2>Start fresh</h2>
+          <p class="hint">
+            Remove your saved choices, prompt history and counts. Save a backup
+            first if you'd like to keep them.
+          </p>
+          <button id="reset-all" type="button" class="danger">
+            Reset AutoSkip
+          </button>
+        </div>
+      </details>
+      <details class="card">
+        <summary>Troubleshooting</summary>
+        <label class="row"
+          ><span>Diagnostic logging</span><input id="debug" type="checkbox"
+        /></label>
+        <p class="hint">
+          Adds messages to the browser's console to help investigate a problem.
+          Nothing is sent to us.
         </p>
-      </section>
+        <p class="hint">
+          Undo also pauses that action for the current show. Select Resume in
+          the popup to start it again. Pauses end when Chrome restarts or after
+          four hours.
+        </p>
+      </details>
+      <footer>
+        No account. No ads. No tracking.<br /><span
+          >Your preferences and counts stay in this browser. Backups are
+          downloaded to your device.</span
+        >
+      </footer>
     </main>
     <script type="module" src="./options.ts"></script>
   </body>

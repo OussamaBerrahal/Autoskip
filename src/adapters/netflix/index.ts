@@ -20,15 +20,15 @@ const RECAP_SELECTORS = [
 const CREDITS_SELECTORS = [
   '[data-uia="next-episode-seamless-button"]',
   '[data-uia="next-episode-button"]',
-  'button[data-uia*="next-episode"]',
   '[data-uia="player-next-episode"]',
 ];
 
 const STILL_WATCHING_SELECTORS = [
   '[data-uia="interrupt-autoplay-continue"]',
-  '[data-uia="evidence-overlay-action-primary"]',
   'button[data-uia*="continue-playing"]',
 ];
+
+let cachedTitle: { path: string; title: string } | null = null;
 
 export const netflixAdapter: StreamingAdapter = {
   id: "netflix",
@@ -44,11 +44,21 @@ export const netflixAdapter: StreamingAdapter = {
   },
 
   getSeriesTitle() {
-    return titleFromSelectors([
-      '[data-uia="video-title"]',
+    const path = window.location.pathname;
+    const title = titleFromSelectors([
+      '[data-uia="video-title"] h4',
       ".video-title h4",
-      ".video-title",
     ]);
+    // Older layouts expose the show title alone. Never concatenate the episode
+    // number/name into the identity when the container has child elements.
+    const titleRoot = document.querySelector(
+      '[data-uia="video-title"], .video-title',
+    );
+    const plainTitle =
+      titleRoot?.childElementCount === 0 ? titleRoot.textContent?.trim() : null;
+    const detected = title || plainTitle;
+    if (detected) cachedTitle = { path, title: detected };
+    return cachedTitle?.path === path ? cachedTitle.title : null;
   },
 
   detectIntro() {
@@ -60,7 +70,8 @@ export const netflixAdapter: StreamingAdapter = {
   },
 
   detectCredits() {
-    return detectControl("credits", CREDITS_SELECTORS);
+    // The persistent toolbar control (control-next) is never an end card.
+    return detectControl("credits", CREDITS_SELECTORS, [], false);
   },
 
   detectStillWatching() {

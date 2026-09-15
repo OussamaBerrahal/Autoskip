@@ -20,8 +20,8 @@ AutoSkip handles repetitive streaming playback buttons according to choices you 
 • Use per-series preferences when the player exposes an identifiable series.
 • Keep service defaults and override only the actions you choose.
 • Receive a suggestion after repeated manual skips. Preferences are never enabled without your choice.
-• Rewind an automatic intro or recap with Undo when the player exposes a seekable video. Other actions offer Pause automation.
-• Review estimated time saved, change in-player prompt language, and export or reset your preferences.
+• Rewind an automatic intro or recap with Undo when the player exposes a seekable video. Other actions offer Pause this action.
+• Use four clearly explained switches, change the in-player message language, and save or restore a backup.
 
 AutoSkip includes adapters for Netflix, Prime Video, Disney+, and Apple TV+. Player layouts, languages, and regional versions can vary. If a series cannot be identified, choose service defaults explicitly. AutoSkip clicks controls the service already provides; it does not bypass access restrictions or remove advertisements.
 
@@ -65,7 +65,7 @@ Use these facts to answer the dashboard's current privacy questions. Owner decla
 
 ## Upload assets
 
-- ZIP: `artifacts/autoskip-1.0.0.zip` (manifest at archive root)
+- ZIP: `artifacts/autoskip-1.0.1.zip` (manifest at archive root)
 - Icon: `apps/extension/icons/icon128.png`
 - Small promotional image: `docs/store/images/small-promo-440x280.png`
 - Screenshots (1280 × 800): `01-player-prompt.png`, `02-player-undo.png`, `03-popup-rules.png`, `04-options.png` in `docs/store/images/`
@@ -77,7 +77,7 @@ Asset dimensions and required assets were checked against [Chrome's image requir
 ## Submission sequence
 
 1. Complete the live-site checklist in `docs/test-checklist.md` and fix any failures.
-2. Merge the tested changes; remove `version_name: 1.0.0 alpha` for a stable release and rerun all checks/package/screenshots.
+2. Merge the tested changes; remove `version_name: 1.0.1 alpha` for a stable release and rerun all checks/package/screenshots.
 3. Review this copy, confirm owner/contact details in the developer dashboard, and upload the ZIP and images.
 4. Complete the dashboard privacy declarations, preview the listing, and submit for review.
 

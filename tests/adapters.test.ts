@@ -108,3 +108,34 @@ it("never treats Watch credits or generic Continue as a skip command", () => {
     expect(adapter.detectStillWatching()).toBeNull();
   }
 });
+
+it("ignores Netflix's normal Next Episode toolbar button", () => {
+  stubVisibleRect();
+  document.body.innerHTML =
+    '<button data-uia="control-next" aria-label="Next Episode">Next Episode</button>';
+  expect(netflixAdapter.detectCredits()).toBeNull();
+  document.body.innerHTML +=
+    '<button data-uia="next-episode-seamless-button">Next Episode</button>';
+  expect(netflixAdapter.detectCredits()?.element.dataset.uia).toBe(
+    "next-episode-seamless-button",
+  );
+});
+
+it("ignores controls faded out by a parent", () => {
+  stubVisibleRect();
+  document.body.innerHTML =
+    '<div style="opacity:0"><button data-uia="next-episode-button">Next Episode</button></div>';
+  expect(netflixAdapter.detectCredits()).toBeNull();
+});
+
+it("keeps Netflix's show title when controls hide, without using the episode title", () => {
+  history.replaceState({}, "", "/watch/friends-1");
+  document.body.innerHTML =
+    '<div data-uia="video-title"><h4>Friends</h4><span>E6</span><span>The One with the Halloween Party</span></div>';
+  expect(netflixAdapter.getSeriesTitle()).toBe("Friends");
+  expect(netflixAdapter.getSeriesId()).toBe("title:friends");
+  document.body.innerHTML = "";
+  expect(netflixAdapter.getSeriesTitle()).toBe("Friends");
+  history.replaceState({}, "", "/watch/different-show");
+  expect(netflixAdapter.getSeriesTitle()).toBeNull();
+});

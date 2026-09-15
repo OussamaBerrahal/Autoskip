@@ -18,6 +18,7 @@ export type PromptOptions = {
   actionType: ActionType;
   locale?: string;
   allowSeries?: boolean;
+  serviceName?: string;
   onChoice: (choice: PromptChoice) => void;
 };
 
@@ -113,7 +114,7 @@ export function showToast(options: ToastOptions): void {
       void Promise.resolve(options.onUndo?.()).catch(() => {
         showToast({
           message:
-            "Could not save your preference. Please try again from Options.",
+            "Could not save your preference. Please try again from Settings.",
         });
       });
     });
@@ -161,7 +162,12 @@ export function showActionPrompt(options: PromptOptions): void {
             variant: "primary",
           },
           { label: t("prompt.alwaysSeries", locale), value: "series" },
-          { label: t("prompt.alwaysService", locale), value: "service" },
+          {
+            label: t("prompt.alwaysService", locale, {
+              service: options.serviceName ?? "this streaming app",
+            }),
+            value: "service",
+          },
           {
             label: t("prompt.notNow", locale),
             value: "dismiss",
@@ -174,7 +180,12 @@ export function showActionPrompt(options: PromptOptions): void {
             value: "series",
             variant: "primary",
           },
-          { label: t("prompt.alwaysService", locale), value: "service" },
+          {
+            label: t("prompt.alwaysService", locale, {
+              service: options.serviceName ?? "this streaming app",
+            }),
+            value: "service",
+          },
           {
             label: t("prompt.notNow", locale),
             value: "dismiss",

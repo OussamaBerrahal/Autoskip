@@ -10,13 +10,18 @@ export function isVisible(el: Element): boolean {
     el.closest("[hidden], [inert], #autoskip-prompt, #autoskip-toast")
   )
     return false;
-  const style = window.getComputedStyle(el);
-  if (
-    style.display === "none" ||
-    style.visibility === "hidden" ||
-    style.opacity === "0"
+  for (
+    let ancestor: Element | null = el;
+    ancestor;
+    ancestor = ancestor.parentElement
   ) {
-    return false;
+    const style = window.getComputedStyle(ancestor);
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      style.opacity === "0"
+    )
+      return false;
   }
   const rect = el.getBoundingClientRect();
   return rect.width > 0 && rect.height > 0;

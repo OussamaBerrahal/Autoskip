@@ -1,5 +1,5 @@
 import { adapters } from "../../src/adapters";
-import { formatDuration, summarizeStats } from "../../src/storage/stats";
+import { summarizeStats } from "../../src/storage/stats";
 import { loadState } from "../../src/storage/state";
 import { mutateState } from "../../src/storage/mutations";
 import { validateImport } from "../../src/storage/validation";
@@ -40,7 +40,7 @@ async function refresh() {
       `[data-service="${adapter.id}"]`,
     )!.checked = state.services[adapter.id].enabled;
   document.querySelector("#stats")!.textContent =
-    `Session: ${summarizeStats(state.sessionStats)} (~${formatDuration(state.sessionStats.estimatedMsSaved)}) · Lifetime: ${summarizeStats(state.stats)} (~${formatDuration(state.stats.estimatedMsSaved)})`;
+    `Since Chrome opened: ${summarizeStats(state.sessionStats)}\nAll time: ${summarizeStats(state.stats)}`;
 }
 function run(action: () => Promise<unknown>, success = "Saved.") {
   void action()
@@ -82,7 +82,7 @@ document.querySelector("#reset-lifetime")!.addEventListener("click", () => {
 document.querySelector("#reset-all")!.addEventListener("click", () => {
   if (
     confirm(
-      "Delete all preferences, learning, and statistics? Export a backup first if you want to keep them.",
+      "Delete all preferences, learning, and statistics? Save a backup first if you want to keep them.",
     )
   )
     run(
@@ -101,7 +101,7 @@ document.querySelector("#export")!.addEventListener("click", () =>
     link.download = "autoskip-preferences.json";
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, "Export downloaded. It contains your saved series preferences and statistics."),
+  }, "Backup saved. It includes your show choices and counts."),
 );
 document
   .querySelector("#import")!
@@ -120,7 +120,7 @@ importFile.addEventListener("change", () => {
     )
       return;
     await mutateState({ kind: "import", state });
-  }, "Import processed.");
+  }, "Backup processed.");
   importFile.value = "";
 });
 chrome.storage.onChanged.addListener(() => {

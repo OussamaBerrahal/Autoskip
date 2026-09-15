@@ -12,7 +12,7 @@ await player.screenshot({
   path: `${out}/01-player-prompt.png`,
 });
 await player
-  .getByRole("button", { name: "Always for this series", exact: true })
+  .getByRole("button", { name: "Always for this show", exact: true })
   .click();
 await expect(
   player.getByRole("button", { name: "Undo", exact: true }),
@@ -27,8 +27,11 @@ await player.bringToFront();
 const state = await h.read();
 await h.seed({ ...state, locale: "en" });
 await expect(popup.locator("#service-name")).toHaveText("Netflix");
-await popup.setViewportSize({ width: 340, height: 1000 });
-const popupImage = await popup.locator("body").screenshot();
+await popup.setViewportSize({ width: 360, height: 1000 });
+mkdirSync("artifacts", { recursive: true });
+const popupImage = await popup
+  .locator("body")
+  .screenshot({ path: "artifacts/popup-preview.png" });
 const options = await h.context.newPage();
 await options.goto(`chrome-extension://${h.id}/options.html`);
 await expect(options.locator("#services label")).toHaveCount(4);
@@ -40,11 +43,11 @@ const icon = readFileSync("apps/extension/icons/icon128.png").toString(
   "base64",
 );
 const html = (heading, subheading, img, kind) =>
-  `<!doctype html><html><head><style>*{box-sizing:border-box}body{margin:0;background:#eff5f1;color:#16392d;font-family:Arial,sans-serif}.page{width:1280px;height:800px;display:flex;align-items:center;justify-content:space-between;padding:64px 100px;background:radial-gradient(circle at 100% 0,#cde4d7,transparent 65%)}.copy{width:530px}.brand{display:flex;align-items:center;gap:14px;font-size:24px;font-weight:bold}.brand img{width:48px;height:48px}h1{font-size:58px;letter-spacing:-2.5px;line-height:1.07;margin:50px 0 28px}p{font-size:22px;color:#526e60;line-height:1.6}.badge{margin-top:40px;font-size:13px;border:1px solid #afc9b8;border-radius:20px;padding:10px 16px;display:inline-block}.shot{${kind === "popup" ? "width:340px;" : "width:425px;"}border-radius:16px;box-shadow:0 25px 65px #0b2a2226;border:1px solid #d5e4da}.note{font-size:12px;margin-top:26px;line-height:1.5}</style></head><body><main class="page"><section class="copy"><div class="brand"><img src="data:image/png;base64,${icon}">AutoSkip</div><h1>${heading}</h1><p>${subheading}</p><span class="badge">No account · No tracking · Local storage</span><div class="note">Actual extension interface. Example series and statistics from a simulated player.</div></section><img class="shot" src="data:image/png;base64,${img.toString("base64")}"></main></body></html>`;
+  `<!doctype html><html><head><style>*{box-sizing:border-box}body{margin:0;background:#eff5f1;color:#16392d;font-family:Arial,sans-serif}.page{width:1280px;height:800px;display:flex;align-items:center;justify-content:space-between;padding:64px 100px;background:radial-gradient(circle at 100% 0,#cde4d7,transparent 65%)}.copy{width:530px}.brand{display:flex;align-items:center;gap:14px;font-size:24px;font-weight:bold}.brand img{width:48px;height:48px}h1{font-size:58px;letter-spacing:-2.5px;line-height:1.07;margin:50px 0 28px}p{font-size:22px;color:#526e60;line-height:1.6}.badge{margin-top:40px;font-size:13px;border:1px solid #afc9b8;border-radius:20px;padding:10px 16px;display:inline-block}.shot{${kind === "popup" ? "width:360px;" : "width:425px;"}border-radius:16px;box-shadow:0 25px 65px #0b2a2226;border:1px solid #d5e4da}.note{font-size:12px;margin-top:26px;line-height:1.5}</style></head><body><main class="page"><section class="copy"><div class="brand"><img src="data:image/png;base64,${icon}">AutoSkip</div><h1>${heading}</h1><p>${subheading}</p><span class="badge">No account · No tracking · Local storage</span><div class="note">Actual extension interface. Example series and statistics from a simulated player.</div></section><img class="shot" src="data:image/png;base64,${img.toString("base64")}"></main></body></html>`;
 await canvas.setContent(
   html(
-    "Your series.<br>Your rules.",
-    "Choose what to skip for one series.<br>Set defaults for the whole service.<br>Keep the rest of your viewing as it is.",
+    "Less clicking.<br>More watching.",
+    "Four simple choices.<br>For one show or everything you watch.<br>Change your mind anytime.",
     popupImage,
     "popup",
   ),
@@ -53,7 +56,7 @@ await canvas.screenshot({ path: `${out}/03-popup-rules.png` });
 await canvas.setContent(
   html(
     "Preferences stay<br>with you.",
-    "Enable each service separately.<br>Export a backup when you want.<br>Reset local data from one place.",
+    "Choose where AutoSkip works.<br>Save a backup of your choices.<br>Everything stays on your device.",
     optionsImage,
     "options",
   ),

@@ -15,25 +15,25 @@ For a fresh checkout: `npm ci && npm run build`.
 
 ## Test each service
 
-Repeat for Netflix, Prime Video, Disney+, and Apple TV+. Treat the rows as independent scenarios: reset local data between conflicting preference/discovery scenarios. Start with **Options → Reset all local data** if you want a clean test; export a backup first if keeping existing preferences.
+Repeat for Netflix, Prime Video, Disney+, and Apple TV+. Treat the rows as independent scenarios: reset local data between conflicting preference/discovery scenarios. Start with **Settings → Activity & resets → Reset AutoSkip** if you want a clean test; export a backup first if keeping existing preferences.
 
 | Check | Expected result |
 | --- | --- |
 | A visible Skip Intro control appears | AutoSkip asks what to do; nothing skips before your choice |
 | Choose Skip once | One click; no permanent rule; it is not counted as a manual skip |
-| After a reset, choose Always for this series | One skip; the popup identifies the series and checks Skip intros |
+| After a reset, choose Always for this show | One skip; the popup identifies the series and checks Skip intros |
 | Watch the next episode of that series | The same preference applies if the service exposes a consistent series title |
 | Change to another series | The first series' choice does not apply |
-| Choose Always on this service | The setting applies to other series on this service |
+| Choose Always on Netflix | The setting applies to other series on this service |
 | Recap appears with only intros enabled | It is not skipped as an intro |
 | Click Undo on an automatic intro/recap | Playback returns to before the skip; that skip is removed from stats; the action pauses for this session |
-| Undo cannot be supported for this player | Button says Pause automation; it does not promise a rewind |
-| Choose Next episode or Keep watching in the popup | Only the corresponding exposed playback button is activated; feedback offers Pause automation |
-| After a pause, click Resume automation in the popup | Saved series/service preferences become effective again |
+| Undo cannot be supported for this player | Button says Pause this action; it does not promise a rewind |
+| Choose Next episode or Keep watching in the popup | Next episode requires a supported end card near the end after observed playback. Keep watching only answers its confirmation. Feedback offers Pause this action |
+| After a pause, click Resume in the popup | Saved series/service preferences become effective again |
 | Disable AutoSkip or disable this service | No automation; pending preference prompt disappears |
 | Toggle another action for this series | Unrelated service defaults stay effective |
-| Click Use service defaults | Removes the current series overrides |
-| Series is not identified | Series controls are disabled; only an explicit service choice changes service settings |
+| Click Use my Netflix settings | Removes the current series overrides |
+| Series is not identified | Only the All shows choice is offered; no disabled duplicate controls |
 | Skip manually twice, then encounter that control again | A smart preference prompt appears, unless you already configured/dismissed that action |
 | Enter/exit fullscreen | Prompt and feedback remain visible in the service's fullscreen player |
 | Switch episodes while a prompt is open | A stale prompt cannot save a rule or click the old control |
@@ -45,7 +45,7 @@ Repeat for Netflix, Prime Video, Disney+, and Apple TV+. Treat the rows as indep
 - Change the in-player prompt language (English/French/German/Spanish); reload and verify prompts.
 - Export, reset, and import preferences; verify the settings return.
 - Try invalid JSON: see an error and retain the previous settings.
-- Reset session/lifetime statistics and check the popup updates.
+- Clear current/all counts in Settings → Activity & resets and check the values update.
 - Check `chrome://extensions` → AutoSkip → **Errors** for errors after each service test.
 
 ## Results to report
@@ -57,7 +57,7 @@ Repeat for Netflix, Prime Video, Disney+, and Apple TV+. Treat the rows as indep
 | Disney+ | | | | | | | | | |
 | Apple TV+ | | | | | | | | | |
 
-If a control is missed, note the service, action, UI language, Chrome version, and what happened. Options → Debug logging adds local console messages. Do not share authentication tokens or account details.
+If a control is missed, note the service, action, UI language, Chrome version, and what happened. Settings → Troubleshooting → Diagnostic logging adds local console messages. Do not share authentication tokens or account details.
 
 ## What is already automated
 

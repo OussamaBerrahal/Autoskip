@@ -11,10 +11,12 @@ export function detectControl(
   type: ActionType,
   selectors: string[],
   extraLabels: string[] = [],
+  allowLabelFallback = true,
 ): DetectedAction | null {
   const bySelector = queryFirstVisible(selectors);
   if (bySelector) return toDetectedAction(type, bySelector, "high");
 
+  if (!allowLabelFallback) return null;
   const byLabel = findButtonByLabels([...CONTROL_LABELS[type], ...extraLabels]);
   if (byLabel) return toDetectedAction(type, byLabel, "medium");
 

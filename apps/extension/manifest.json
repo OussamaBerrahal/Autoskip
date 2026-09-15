@@ -1,9 +1,11 @@
 {
   "manifest_version": 3,
   "name": "AutoSkip",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Automatically skip intros and recaps, advance episodes, and keep watching with preferences saved only on your device.",
-  "permissions": ["storage"],
+  "permissions": [
+    "storage"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -48,10 +50,12 @@
         "*://*.disneyplus.com/*",
         "*://*.tv.apple.com/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
-  "version_name": "1.0.0 alpha",
+  "version_name": "1.0.1 alpha",
   "minimum_chrome_version": "120"
 }

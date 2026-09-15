@@ -1,5 +1,5 @@
 import { isVisible } from "./dom";
-import type { ActionType } from "../types";
+import type { ActionType, DetectedAction } from "../types";
 
 export function playbackVideo(): HTMLVideoElement | null {
   return Array.from(document.querySelectorAll("video")).find(isVisible) ?? null;
@@ -33,5 +33,51 @@ export function captureUndo(type: ActionType): (() => boolean) | null {
     } catch {
       return false;
     }
+  };
+}
+
+export function playbackKey(video: HTMLVideoElement): string {
+  return `${location.origin}${location.pathname}::${video.currentSrc}`;
+}
+
+export function actionResult(action: DetectedAction): () => Promise<boolean> {
+  const video = playbackVideo();
+  const time = video?.currentTime ?? 0,
+    source = video?.currentSrc;
+  const path = location.pathname,
+    paused = video?.paused;
+  const started = performance.now();
+  return async () => {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const current = playbackVideo();
+      if (action.type === "credits") {
+        if (
+          location.pathname !== path ||
+          (current &&
+            (current.currentSrc !== source || current.currentTime < time - 2))
+        )
+          return true;
+      } else if (action.type === "intro" || action.type === "recap") {
+        const naturalProgress =
+          ((performance.now() - started) / 1000) * (video?.playbackRate ?? 1);
+        if (
+          !isVisible(action.element) &&
+          current === video &&
+          video &&
+          video.currentSrc === source &&
+          location.pathname === path &&
+          video.currentTime - time > naturalProgress + 2
+        )
+          return true;
+      } else if (
+        current &&
+        !current.paused &&
+        (paused || !isVisible(action.element))
+      ) {
+        return true;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    }
+    return false;
   };
 }

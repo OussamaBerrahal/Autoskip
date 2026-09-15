@@ -1,7 +1,13 @@
 import { resolveAdapter } from "../adapters";
 import { detectAnyAction, performAction } from "./detection";
 import { debounce, isVisible } from "./dom";
-import { captureUndo, playbackVideo } from "./playback";
+import {
+  captureUndo,
+  playbackVideo,
+  playbackKey,
+  actionResult,
+} from "./playback";
+import { PlaybackGuard } from "./guard";
 import { t, toastMessage } from "../i18n/messages";
 import { resolvePreferences, shouldAutomate } from "../rules/engine";
 import { loadState, promptKey, seriesKey, sessionKey } from "../storage/state";
@@ -24,6 +30,7 @@ let generation = 0;
 let pageUrl = "";
 let handled: { element: HTMLElement; type: string } | null = null;
 let promptElement: HTMLElement | null = null;
+let guard = new PlaybackGuard();
 
 function context(adapter: StreamingAdapter): RuleContext {
   return {
@@ -52,17 +59,27 @@ async function automate(
   adapter: StreamingAdapter,
   action: DetectedAction,
 ): Promise<void> {
-  if (handled?.element === action.element && handled.type === action.type)
+  if (
+    !guard.allows(action.type) ||
+    (handled?.element === action.element && handled.type === action.type)
+  )
     return;
   const ctx = context(adapter),
     undo = captureUndo(action.type),
     url = location.href;
+  const confirmed = actionResult(action);
   if (!performAction(adapter, action)) return;
+  guard.markAttempt(action.type);
   handled = { element: action.element, type: action.type };
+  if (!(await confirmed())) return;
   const state = await mutateState({ kind: "skip", action: action.type });
   if (state.debugLogging)
     console.info(`[AutoSkip] Activated ${adapter.id} ${action.type}`);
-  if (location.href !== url) return;
+  if (location.href !== url) {
+    if (action.type !== "credits") return;
+    pageUrl = location.href;
+    dismissOverlays();
+  }
   showToast({
     message: toastMessage(action.type, state.locale),
     undoLabel: t(undo ? "prompt.undo" : "prompt.pause", state.locale),
@@ -104,9 +121,12 @@ async function applyChoice(
   await mutateState({ kind: "prompt", key, dismissed: choice === "dismiss" });
   if (choice === "dismiss") return;
   if (choice === "once") {
+    const confirmed = actionResult(action);
     if (performAction(adapter, action)) {
+      guard.markAttempt(action.type);
       handled = { element: action.element, type: action.type };
-      showToast({ message: t("toast.skippedOnce", state.locale) });
+      if (await confirmed())
+        showToast({ message: t("toast.skippedOnce", state.locale) });
     }
     return;
   }
@@ -164,10 +184,23 @@ async function scan(): Promise<void> {
       dismissOverlays();
     }
     const adapter = resolveAdapter();
-    if (!adapter || !playbackVideo()) {
+    const video = playbackVideo();
+    if (!adapter || !video || video.readyState < 1) {
       dismissPrompt();
       return;
     }
+    // Netflix's title is mounted only while its controls are shown.
+    adapter.getSeriesTitle();
+    guard.observe({
+      key: playbackKey(video),
+      time: video.currentTime,
+      duration: video.duration,
+      paused: video.paused,
+      seeking: video.seeking,
+      ended: video.ended,
+      rate: video.playbackRate,
+      now: performance.now(),
+    });
     const state = await loadState();
     if (currentGeneration !== generation || !observer) return;
     if (!state.enabled || !state.services[adapter.id].enabled) {
@@ -183,6 +216,10 @@ async function scan(): Promise<void> {
     }
     const { action } = detected,
       ctx = context(adapter);
+    if (!guard.allows(action.type)) {
+      dismissPrompt();
+      return;
+    }
     if (promptElement && promptElement !== action.element) dismissPrompt();
     if (resolvePreferences(state, adapter.id, ctx.seriesId)[action.type]) {
       dismissPrompt();
@@ -220,6 +257,7 @@ async function scan(): Promise<void> {
       actionType: action.type,
       locale: state.locale,
       allowSeries: Boolean(ctx.seriesId),
+      serviceName: adapter.displayName,
       onChoice: (choice) => {
         void applyChoice(adapter, action, ctx, url, choice).catch(report);
       },
@@ -235,6 +273,7 @@ const debouncedScan = debounce(runScan, 180);
 export function startController(): void {
   if (observer) return;
   generation += 1;
+  guard = new PlaybackGuard();
   pageUrl = location.href;
   observer = new MutationObserver(debouncedScan);
   observer.observe(document.documentElement, {

@@ -1,6 +1,6 @@
 {
   "name": "autoskip",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Free and open-source browser extension that remembers repetitive streaming playback decisions and performs them automatically.",
   "type": "module",
