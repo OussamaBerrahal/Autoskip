@@ -255,9 +255,10 @@ test("disabled service removes its pending prompt and leaves the player alone", 
 test("an existing prompt follows the player into and out of fullscreen", async () => {
   const page = await h.player();
   await expect(page.getByRole("dialog")).toBeVisible();
+  await page.bringToFront();
   await page
-    .locator(".scene")
-    .evaluate((scene: HTMLElement) => scene.requestFullscreen());
+    .getByRole("button", { name: "Enter fullscreen", exact: true })
+    .click();
   await expect(page.locator(".scene #autoskip-prompt")).toBeVisible();
   await page.evaluate(() => document.exitFullscreen());
   await expect(page.locator("html > #autoskip-prompt")).toBeVisible();
