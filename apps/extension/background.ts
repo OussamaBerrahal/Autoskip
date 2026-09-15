@@ -1,20 +1,34 @@
-import { loadState, resetSessionStats } from "../../src/storage/state";
+import { loadState, saveState } from "../../src/storage/state";
+import { applyMutation, type StateMutation } from "../../src/storage/mutations";
 
+let pending: Promise<unknown> = Promise.resolve();
+function enqueue(mutation: StateMutation) {
+  const operation = pending.then(async () => {
+    const next = applyMutation(await loadState(), mutation);
+    await saveState(next);
+    return next;
+  });
+  pending = operation.catch(() => undefined);
+  return operation;
+}
 chrome.runtime.onInstalled.addListener((details) => {
-  void loadState();
-  if (details.reason === "install") {
-    void resetSessionStats();
-  }
+  if (details.reason === "install")
+    void enqueue({ kind: "reset", target: "startup" });
 });
-
 chrome.runtime.onStartup.addListener(() => {
-  void resetSessionStats();
+  void enqueue({ kind: "reset", target: "startup" });
 });
-
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id) return false;
+  if (message?.type === "autoskip/mutate") {
+    enqueue(message.mutation).then(
+      (state) => sendResponse({ ok: true, state }),
+      (error) => sendResponse({ ok: false, error: String(error) }),
+    );
+    return true;
+  }
   if (message?.type === "autoskip/ping") {
     sendResponse({ ok: true, version: chrome.runtime.getManifest().version });
-    return true;
   }
   return false;
 });

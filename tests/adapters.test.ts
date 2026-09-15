@@ -2,8 +2,18 @@
  * @vitest-environment jsdom
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { findButtonByLabels, isVisible, toDetectedAction } from "../src/engine/dom";
-import { adapters, netflixAdapter, primeVideoAdapter, disneyPlusAdapter, appleTvAdapter } from "../src/adapters";
+import {
+  findButtonByLabels,
+  isVisible,
+  toDetectedAction,
+} from "../src/engine/dom";
+import {
+  adapters,
+  netflixAdapter,
+  primeVideoAdapter,
+  disneyPlusAdapter,
+  appleTvAdapter,
+} from "../src/adapters";
 import { detectControl } from "../src/adapters/shared";
 
 function stubVisibleRect() {
@@ -61,10 +71,18 @@ describe("platform adapters", () => {
   });
 
   it("matches hostnames", () => {
-    expect(netflixAdapter.matches(new URL("https://www.netflix.com/watch/123"))).toBe(true);
-    expect(primeVideoAdapter.matches(new URL("https://www.primevideo.com/detail/x"))).toBe(true);
-    expect(disneyPlusAdapter.matches(new URL("https://www.disneyplus.com/play/abc"))).toBe(true);
-    expect(appleTvAdapter.matches(new URL("https://tv.apple.com/show/xyz"))).toBe(true);
+    expect(
+      netflixAdapter.matches(new URL("https://www.netflix.com/watch/123")),
+    ).toBe(true);
+    expect(
+      primeVideoAdapter.matches(new URL("https://www.primevideo.com/detail/x")),
+    ).toBe(true);
+    expect(
+      disneyPlusAdapter.matches(new URL("https://www.disneyplus.com/play/abc")),
+    ).toBe(true);
+    expect(
+      appleTvAdapter.matches(new URL("https://tv.apple.com/show/xyz")),
+    ).toBe(true);
   });
 
   it("detects netflix skip intro via data-uia", () => {
@@ -79,4 +97,14 @@ describe("platform adapters", () => {
     const action = detectControl("intro", []);
     expect(action?.type).toBe("intro");
   });
+});
+
+it("never treats Watch credits or generic Continue as a skip command", () => {
+  stubVisibleRect();
+  document.body.innerHTML =
+    "<button>Watch credits</button><button>Continue</button>";
+  for (const adapter of adapters) {
+    expect(adapter.detectCredits()).toBeNull();
+    expect(adapter.detectStillWatching()).toBeNull();
+  }
 });

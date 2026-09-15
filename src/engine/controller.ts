@@ -1,13 +1,15 @@
 import { resolveAdapter } from "../adapters";
 import { detectAnyAction, performAction } from "./detection";
-import { debounce, normalizeText } from "./dom";
-import { actionNoun, t, toastMessage } from "../i18n/messages";
-import { resolvePreferences, shouldAutomate, upsertRule } from "../rules/engine";
-import { loadState, promptKey, updateState } from "../storage/state";
-import { recordSkip } from "../storage/stats";
-import type { ActionType, DetectedAction, StreamingAdapter } from "../types";
+import { debounce, isVisible } from "./dom";
+import { captureUndo, playbackVideo } from "./playback";
+import { t, toastMessage } from "../i18n/messages";
+import { resolvePreferences, shouldAutomate } from "../rules/engine";
+import { loadState, promptKey, seriesKey, sessionKey } from "../storage/state";
+import { mutateState, type RuleContext } from "../storage/mutations";
+import type { AutoSkipState, DetectedAction, StreamingAdapter } from "../types";
 import {
   dismissOverlays,
+  dismissPrompt,
   isPromptVisible,
   showActionPrompt,
   showToast,
@@ -15,307 +17,252 @@ import {
 } from "../ui/feedback";
 
 const MANUAL_PROMPT_THRESHOLD = 2;
-const SCAN_INTERVAL_MS = 700;
-
-let lastHandledSignature = "";
 let observer: MutationObserver | null = null;
 let intervalId: number | undefined;
-let clickListenerAttached = false;
 let scanning = false;
+let generation = 0;
+let pageUrl = "";
+let handled: { element: HTMLElement; type: string } | null = null;
+let promptElement: HTMLElement | null = null;
 
-function actionSignature(action: DetectedAction): string {
-  return `${action.type}:${action.label}`;
+function context(adapter: StreamingAdapter): RuleContext {
+  return {
+    serviceId: adapter.id,
+    seriesId: adapter.getSeriesId(),
+    seriesTitle: adapter.getSeriesTitle(),
+  };
 }
-
-async function appendDebug(message: string): Promise<void> {
-  const state = await loadState();
-  if (!state.debugLogging) return;
-  console.info(`[AutoSkip] ${message}`);
-}
-
-async function applyChoice(
-  adapter: StreamingAdapter,
+function explicitlyConfigured(
+  state: AutoSkipState,
+  ctx: RuleContext,
   action: DetectedAction,
-  choice: PromptChoice,
-): Promise<void> {
-  const seriesId = adapter.getSeriesId();
-  const seriesTitle = adapter.getSeriesTitle();
-  const key = promptKey(adapter.id, seriesId, action.type);
-
-  if (choice === "dismiss") {
-    await updateState((s) => ({
-      ...s,
-      dismissedPrompts: { ...s.dismissedPrompts, [key]: true },
-      offeredFirstEncounter: { ...s.offeredFirstEncounter, [key]: true },
-    }));
-    return;
-  }
-
-  if (choice === "once") {
-    await updateState((s) => ({
-      ...s,
-      offeredFirstEncounter: { ...s.offeredFirstEncounter, [key]: true },
-    }));
-    const clicked = performAction(adapter, action);
-    if (clicked) {
-      const locale = (await loadState()).locale;
-      showToast({ message: t("toast.skippedOnce", locale) });
-    }
-    return;
-  }
-
-  const scope = choice === "service" ? "service" : "series";
-  await updateState((s) =>
-    upsertRule(s, scope, adapter.id, seriesId, seriesTitle, {
-      [action.type]: true,
-    }),
-  );
-  await automate(adapter, action);
+): boolean {
+  return [
+    state.sessionRules[sessionKey(ctx.serviceId, ctx.seriesId)],
+    ctx.seriesId
+      ? state.seriesRules[seriesKey(ctx.serviceId, ctx.seriesId)]
+      : undefined,
+    state.serviceRules[ctx.serviceId],
+  ].some((rule) => rule?.preferences[action.type] !== undefined);
 }
-
+function report(error: unknown): void {
+  console.warn("[AutoSkip] Could not complete the action:", error);
+}
 async function automate(
   adapter: StreamingAdapter,
   action: DetectedAction,
 ): Promise<void> {
-  const signature = actionSignature(action);
-  if (signature === lastHandledSignature) return;
-  lastHandledSignature = signature;
-
-  const clicked = performAction(adapter, action);
-  if (!clicked) {
-    await appendDebug(`click failed for ${action.type}`);
+  if (handled?.element === action.element && handled.type === action.type)
     return;
-  }
-
-  const state = await updateState((current) => recordSkip(current, action.type));
-  await appendDebug(`automated ${action.type}`);
-
+  const ctx = context(adapter),
+    undo = captureUndo(action.type),
+    url = location.href;
+  if (!performAction(adapter, action)) return;
+  handled = { element: action.element, type: action.type };
+  const state = await mutateState({ kind: "skip", action: action.type });
+  if (state.debugLogging)
+    console.info(`[AutoSkip] Activated ${adapter.id} ${action.type}`);
+  if (location.href !== url) return;
   showToast({
     message: toastMessage(action.type, state.locale),
-    undoLabel: t("prompt.undo", state.locale),
-    onUndo: () => {
-      void updateState((current) =>
-        upsertRule(
-          current,
-          "session",
-          adapter.id,
-          adapter.getSeriesId(),
-          adapter.getSeriesTitle(),
-          { [action.type]: false },
+    undoLabel: t(undo ? "prompt.undo" : "prompt.pause", state.locale),
+    durationMs: 8000,
+    onUndo: async () => {
+      // Capture the original series context; a later navigation must not alter a new series.
+      const reversed = undo?.() ?? false;
+      await mutateState({
+        kind: "pause",
+        ...ctx,
+        action: action.type,
+        reversed,
+      });
+      showToast({
+        message: t(
+          reversed ? "toast.undone" : "toast.undoPaused",
+          state.locale,
         ),
-      );
-      showToast({ message: t("toast.undoPaused", state.locale) });
+      });
     },
   });
 }
-
-async function offerFirstEncounter(
+async function applyChoice(
   adapter: StreamingAdapter,
   action: DetectedAction,
+  ctx: RuleContext,
+  url: string,
+  choice: PromptChoice,
 ): Promise<void> {
-  if (isPromptVisible()) return;
-
+  if (
+    location.href !== url ||
+    adapter.getSeriesId() !== ctx.seriesId ||
+    !isVisible(action.element)
+  )
+    return;
   const state = await loadState();
-  const seriesId = adapter.getSeriesId();
-  const key = promptKey(adapter.id, seriesId, action.type);
-
-  if (state.dismissedPrompts[key] || state.offeredFirstEncounter[key]) return;
-  if (shouldAutomate(state, adapter.id, seriesId, action.type)) return;
-
-  // Only offer first-encounter for intro/recap by default (core + opt-in discovery).
-  if (action.type !== "intro" && action.type !== "recap") return;
-
-  const signature = `first:${actionSignature(action)}`;
-  if (signature === lastHandledSignature) return;
-  lastHandledSignature = signature;
-
-  await updateState((s) => ({
-    ...s,
-    offeredFirstEncounter: { ...s.offeredFirstEncounter, [key]: true },
-  }));
-
-  showActionPrompt({
-    mode: "first-encounter",
-    actionType: action.type,
-    locale: state.locale,
-    onChoice: (choice) => {
-      void applyChoice(adapter, action, choice);
-    },
-  });
-}
-
-async function offerSmartPrompt(
-  adapter: StreamingAdapter,
-  action: DetectedAction,
-): Promise<void> {
-  if (isPromptVisible()) return;
-
-  const state = await loadState();
-  const seriesId = adapter.getSeriesId();
-  const key = promptKey(adapter.id, seriesId, action.type);
-
-  if (state.dismissedPrompts[key]) return;
-  if (shouldAutomate(state, adapter.id, seriesId, action.type)) return;
-
-  const count = state.manualSkipCounts[key] ?? 0;
-  if (count < MANUAL_PROMPT_THRESHOLD) return;
-
-  const signature = `smart:${actionSignature(action)}`;
-  if (signature === lastHandledSignature) return;
-  lastHandledSignature = signature;
-
-  showActionPrompt({
-    mode: "smart",
-    actionType: action.type,
-    locale: state.locale,
-    onChoice: (choice) => {
-      void applyChoice(adapter, action, choice);
-    },
-  });
-}
-
-function inferActionTypeFromTarget(target: EventTarget | null): ActionType | null {
-  if (!(target instanceof Element)) return null;
-  const clickable = target.closest("button, [role='button'], a");
-  if (!(clickable instanceof HTMLElement)) return null;
-
-  const label = normalizeText(
-    [
-      clickable.getAttribute("aria-label"),
-      clickable.getAttribute("data-uia"),
-      clickable.getAttribute("data-testid"),
-      clickable.textContent,
-    ]
-      .filter(Boolean)
-      .join(" "),
-  );
-
-  if (!label) return null;
-  if (label.includes("recap") || label.includes("résumé") || label.includes("resumen")) {
-    return "recap";
-  }
-  if (label.includes("intro") || label.includes("skip")) {
-    // Prefer intro when ambiguous skip buttons appear mid-episode start.
-    if (label.includes("credit") || label.includes("next episode")) return "credits";
-    if (label.includes("continue") || label.includes("still watching")) {
-      return "stillWatching";
+  if (!state.enabled || !state.services[adapter.id].enabled) return;
+  const key = promptKey(ctx.serviceId, ctx.seriesId, action.type);
+  await mutateState({ kind: "prompt", key, dismissed: choice === "dismiss" });
+  if (choice === "dismiss") return;
+  if (choice === "once") {
+    if (performAction(adapter, action)) {
+      handled = { element: action.element, type: action.type };
+      showToast({ message: t("toast.skippedOnce", state.locale) });
     }
-    return "intro";
+    return;
   }
-  if (label.includes("next episode") || label.includes("credits")) return "credits";
-  if (label.includes("still watching") || label.includes("continue watching")) {
-    return "stillWatching";
-  }
-  return null;
+  if (choice === "series" && !ctx.seriesId) return;
+  await mutateState({
+    kind: "rule",
+    ...ctx,
+    scope: choice,
+    patch: { [action.type]: true },
+  });
+  // User may have navigated or the control may have disappeared while saving.
+  if (location.href === url && adapter.getSeriesId() === ctx.seriesId)
+    await automate(adapter, action);
 }
-
 async function onDocumentClick(event: MouseEvent): Promise<void> {
+  // Extension-generated clicks and our own prompt buttons are not manual skips.
+  if (
+    !event.isTrusted ||
+    !(event.target instanceof Element) ||
+    event.target.closest("#autoskip-prompt, #autoskip-toast")
+  )
+    return;
   const adapter = resolveAdapter();
-  if (!adapter) return;
-
-  const actionType = inferActionTypeFromTarget(event.target);
-  if (!actionType) return;
-
+  if (!adapter || !playbackVideo()) return;
+  const detected = detectAnyAction(adapter);
+  if (!detected || !detected.action.element.contains(event.target)) return;
+  const action = detected.action,
+    ctx = context(adapter);
   const state = await loadState();
-  if (!state.enabled || state.services[adapter.id]?.enabled === false) return;
-
-  const seriesId = adapter.getSeriesId();
-  if (shouldAutomate(state, adapter.id, seriesId, actionType)) return;
-
-  const key = promptKey(adapter.id, seriesId, actionType);
-  const count = (state.manualSkipCounts[key] ?? 0) + 1;
-  await updateState((s) => ({
-    ...s,
-    manualSkipCounts: { ...s.manualSkipCounts, [key]: count },
-  }));
-
-  await appendDebug(`manual ${actionType} count=${count}`);
-
-  if (count >= MANUAL_PROMPT_THRESHOLD) {
-    // Defer prompt until next scan detects the control again or immediately if still present.
-    window.setTimeout(() => {
-      void scan();
-    }, 400);
-  }
+  if (
+    !state.enabled ||
+    !state.services[adapter.id].enabled ||
+    shouldAutomate(state, adapter.id, ctx.seriesId, action.type)
+  )
+    return;
+  await mutateState({
+    kind: "manual",
+    key: promptKey(adapter.id, ctx.seriesId, action.type),
+  });
+  dismissPrompt();
 }
+const clickListener = (event: MouseEvent) => {
+  void onDocumentClick(event).catch(report);
+};
 
 async function scan(): Promise<void> {
-  if (scanning) return;
+  if (scanning || !observer) return;
   scanning = true;
+  const currentGeneration = generation;
   try {
+    if (pageUrl !== location.href) {
+      pageUrl = location.href;
+      handled = null;
+      promptElement = null;
+      dismissOverlays();
+    }
     const adapter = resolveAdapter();
-    if (!adapter) return;
-
-    const state = await loadState();
-    if (!state.enabled || state.services[adapter.id]?.enabled === false) return;
-
-    const detected = detectAnyAction(adapter);
-    if (!detected) {
-      // Clear stale signature when controls disappear so next episode can re-trigger.
-      if (!isPromptVisible()) lastHandledSignature = "";
+    if (!adapter || !playbackVideo()) {
+      dismissPrompt();
       return;
     }
-
-    const { action } = detected;
-    const seriesId = adapter.getSeriesId();
-    const prefs = resolvePreferences(state, adapter.id, seriesId);
-
-    if (prefs[action.type]) {
-      dismissOverlays();
+    const state = await loadState();
+    if (currentGeneration !== generation || !observer) return;
+    if (!state.enabled || !state.services[adapter.id].enabled) {
+      dismissPrompt();
+      return;
+    }
+    const detected = detectAnyAction(adapter);
+    if (!detected) {
+      handled = null;
+      promptElement = null;
+      dismissPrompt();
+      return;
+    }
+    const { action } = detected,
+      ctx = context(adapter);
+    if (promptElement && promptElement !== action.element) dismissPrompt();
+    if (resolvePreferences(state, adapter.id, ctx.seriesId)[action.type]) {
+      dismissPrompt();
       await automate(adapter, action);
       return;
     }
-
-    const key = promptKey(adapter.id, seriesId, action.type);
-    const manualCount = state.manualSkipCounts[key] ?? 0;
-
-    if (manualCount >= MANUAL_PROMPT_THRESHOLD) {
-      await offerSmartPrompt(adapter, action);
+    // An explicit off switch or session pause must not be followed by another opt-in prompt.
+    if (explicitlyConfigured(state, ctx, action)) {
+      dismissPrompt();
       return;
     }
-
-    await offerFirstEncounter(adapter, action);
+    if (handled?.element === action.element && handled.type === action.type)
+      return;
+    if (isPromptVisible()) return;
+    const key = promptKey(adapter.id, ctx.seriesId, action.type);
+    if (state.dismissedPrompts[key]) return;
+    const smart = (state.manualSkipCounts[key] ?? 0) >= MANUAL_PROMPT_THRESHOLD;
+    if (
+      !smart &&
+      (state.offeredFirstEncounter[key] ||
+        !["intro", "recap"].includes(action.type))
+    )
+      return;
+    const url = location.href;
+    await mutateState({ kind: "prompt", key });
+    if (
+      currentGeneration !== generation ||
+      url !== location.href ||
+      !isVisible(action.element)
+    )
+      return;
+    promptElement = action.element;
+    showActionPrompt({
+      mode: smart ? "smart" : "first-encounter",
+      actionType: action.type,
+      locale: state.locale,
+      allowSeries: Boolean(ctx.seriesId),
+      onChoice: (choice) => {
+        void applyChoice(adapter, action, ctx, url, choice).catch(report);
+      },
+    });
   } finally {
     scanning = false;
   }
 }
-
-const debouncedScan = debounce(() => {
-  void scan();
-}, 180);
-
+const runScan = () => {
+  void scan().catch(report);
+};
+const debouncedScan = debounce(runScan, 180);
 export function startController(): void {
   if (observer) return;
-
-  void scan();
-  intervalId = window.setInterval(() => {
-    void scan();
-  }, SCAN_INTERVAL_MS);
-
-  observer = new MutationObserver(() => debouncedScan());
+  generation += 1;
+  pageUrl = location.href;
+  observer = new MutationObserver(debouncedScan);
   observer.observe(document.documentElement, {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ["class", "style", "aria-label", "data-uia", "data-testid"],
+    attributeFilter: [
+      "class",
+      "style",
+      "aria-label",
+      "data-uia",
+      "data-testid",
+      "hidden",
+      "disabled",
+    ],
   });
-
-  if (!clickListenerAttached) {
-    document.addEventListener("click", (event) => {
-      void onDocumentClick(event);
-    }, true);
-    clickListenerAttached = true;
-  }
+  document.addEventListener("click", clickListener, true);
+  intervalId = window.setInterval(runScan, 700);
+  runScan();
 }
-
 export function stopController(): void {
+  generation += 1;
   observer?.disconnect();
   observer = null;
-  if (intervalId !== undefined) {
-    window.clearInterval(intervalId);
-    intervalId = undefined;
-  }
+  window.clearInterval(intervalId);
+  intervalId = undefined;
+  document.removeEventListener("click", clickListener, true);
+  handled = null;
+  promptElement = null;
+  dismissOverlays();
 }
-
-// Keep noun helper referenced for potential future toast copy reuse.
-void actionNoun;

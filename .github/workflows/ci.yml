@@ -1,10 +1,10 @@
 name: CI
-
 on:
   push:
     branches: [main]
   pull_request:
-
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -15,12 +15,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
-      - run: npm run build
-      - name: Verify extension package
-        run: |
-          test -f dist/manifest.json
-          test -f dist/background.js
-          test -f dist/content.js
-          test -f dist/popup.html
-          test -f dist/options.html
+      - run: npx playwright install --with-deps chromium
+      - run: npm run check
+      - run: node scripts/package.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: autoskip-test-build
+          path: artifacts/autoskip-*
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: test-results/

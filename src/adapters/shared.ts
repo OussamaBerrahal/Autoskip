@@ -21,8 +21,8 @@ export function detectControl(
   return null;
 }
 
-export function clickAction(action: DetectedAction): void {
-  safeClick(action.element);
+export function clickAction(action: DetectedAction): boolean {
+  return safeClick(action.element);
 }
 
 export function titleFromSelectors(selectors: string[]): string | null {

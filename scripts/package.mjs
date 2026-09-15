@@ -1,0 +1,13 @@
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { resolve, basename } from "node:path";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+await import("./verify-package.mjs");
+mkdirSync("artifacts", { recursive: true });
+const { version } = JSON.parse(readFileSync("package.json", "utf8"));
+const zip = resolve(`artifacts/autoskip-${version}.zip`);
+rmSync(zip, { force: true });
+execFileSync("zip", ["-q", "-r", zip, "."], { cwd: "dist" });
+const sha = createHash("sha256").update(readFileSync(zip)).digest("hex");
+writeFileSync(`${zip}.sha256`, `${sha}  ${basename(zip)}\n`);
+console.log(`Packaged ${zip}\nSHA-256 ${sha}`);

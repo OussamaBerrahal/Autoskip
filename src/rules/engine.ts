@@ -24,7 +24,11 @@ export function resolvePreferences(
   const series = seriesId
     ? state.seriesRules[seriesKey(serviceId, seriesId)]?.preferences
     : undefined;
-  const session = state.sessionRules[sessionKey(serviceId, seriesId)]?.preferences;
+  const sessionRule = state.sessionRules[sessionKey(serviceId, seriesId)];
+  const session =
+    !sessionRule?.expiresAt || sessionRule.expiresAt > Date.now()
+      ? sessionRule?.preferences
+      : undefined;
 
   return {
     intro: session?.intro ?? series?.intro ?? service?.intro ?? false,
@@ -62,7 +66,7 @@ export function upsertRule(
     const existing = next.serviceRules[serviceId];
     next.serviceRules[serviceId] = {
       serviceId,
-      preferences: { ...(existing?.preferences ?? DEFAULT_PREFERENCES), ...patch },
+      preferences: { ...existing?.preferences, ...patch },
       updatedAt: Date.now(),
     };
     return next;
@@ -70,7 +74,7 @@ export function upsertRule(
 
   if (scope === "series") {
     if (!seriesId) {
-      return upsertRule(state, "service", serviceId, null, null, patch);
+      return state;
     }
     const key = seriesKey(serviceId, seriesId);
     const existing = next.seriesRules[key];
@@ -78,7 +82,7 @@ export function upsertRule(
       serviceId,
       seriesId,
       seriesTitle: seriesTitle ?? existing?.seriesTitle,
-      preferences: { ...(existing?.preferences ?? DEFAULT_PREFERENCES), ...patch },
+      preferences: { ...existing?.preferences, ...patch },
       updatedAt: Date.now(),
     };
     return next;
@@ -90,7 +94,7 @@ export function upsertRule(
     serviceId,
     seriesId: seriesId ?? undefined,
     seriesTitle: seriesTitle ?? existing?.seriesTitle,
-    preferences: { ...(existing?.preferences ?? DEFAULT_PREFERENCES), ...patch },
+    preferences: { ...existing?.preferences, ...patch },
     updatedAt: Date.now(),
     expiresAt: Date.now() + SESSION_TTL_MS,
   };

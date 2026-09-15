@@ -19,6 +19,7 @@
         </label>
       </header>
 
+      <p id="status" class="hint" role="status"></p>
       <section class="panel" id="context-panel">
         <div class="row">
           <span class="muted" id="service-label">Service</span>
@@ -34,21 +35,67 @@
           <strong id="series-name">Not detected</strong>
         </div>
 
+        <p id="context-hint" class="hint"></p>
         <div class="rules" id="series-rules" aria-label="Current series rules">
-          <label><input type="checkbox" data-scope="series" data-action="intro" /> Skip intros</label>
-          <label><input type="checkbox" data-scope="series" data-action="recap" /> Skip recaps</label>
-          <label><input type="checkbox" data-scope="series" data-action="credits" /> Skip credits</label>
-          <label><input type="checkbox" data-scope="series" data-action="stillWatching" /> Still watching</label>
+          <label
+            ><input type="checkbox" data-scope="series" data-action="intro" />
+            Skip intros</label
+          >
+          <label
+            ><input type="checkbox" data-scope="series" data-action="recap" />
+            Skip recaps</label
+          >
+          <label
+            ><input type="checkbox" data-scope="series" data-action="credits" />
+            Next episode</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              data-scope="series"
+              data-action="stillWatching"
+            />
+            Keep watching</label
+          >
         </div>
+        <button id="reset-series" type="button">Use service defaults</button>
+        <p id="pause-hint" class="hint"></p>
+        <button id="resume-session" type="button" hidden>
+          Resume automation
+        </button>
       </section>
 
       <section class="panel">
         <h2>Service defaults</h2>
-        <div class="rules" id="service-rules" aria-label="Service default rules">
-          <label><input type="checkbox" data-scope="service" data-action="intro" /> Skip intros</label>
-          <label><input type="checkbox" data-scope="service" data-action="recap" /> Skip recaps</label>
-          <label><input type="checkbox" data-scope="service" data-action="credits" /> Skip credits</label>
-          <label><input type="checkbox" data-scope="service" data-action="stillWatching" /> Still watching</label>
+        <div
+          class="rules"
+          id="service-rules"
+          aria-label="Service default rules"
+        >
+          <label
+            ><input type="checkbox" data-scope="service" data-action="intro" />
+            Skip intros</label
+          >
+          <label
+            ><input type="checkbox" data-scope="service" data-action="recap" />
+            Skip recaps</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              data-scope="service"
+              data-action="credits"
+            />
+            Next episode</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              data-scope="service"
+              data-action="stillWatching"
+            />
+            Keep watching</label
+          >
         </div>
       </section>
 
@@ -63,9 +110,20 @@
       </section>
 
       <footer class="footer">
-        <a id="options-link" href="./options.html" target="_blank" rel="noreferrer">Options</a>
+        <a
+          id="options-link"
+          href="./options.html"
+          target="_blank"
+          rel="noreferrer"
+          >Options</a
+        >
         <span>·</span>
-        <a href="https://github.com/OussamaBerrahal/Autoskip" target="_blank" rel="noreferrer">Source</a>
+        <a
+          href="https://github.com/OussamaBerrahal/Autoskip"
+          target="_blank"
+          rel="noreferrer"
+          >Source</a
+        >
         <span>·</span>
         <span>Local-first</span>
       </footer>

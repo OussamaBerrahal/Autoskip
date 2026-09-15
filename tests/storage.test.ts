@@ -1,0 +1,94 @@
+import { describe, it, expect } from "vitest";
+import { applyMutation } from "../src/storage/mutations";
+import { validateImport } from "../src/storage/validation";
+import { DEFAULT_STATE } from "../src/types";
+import { resolvePreferences, upsertRule } from "../src/rules/engine";
+
+describe("state mutations and imports", () => {
+  it("round trips exported preferences and rejects malformed nested values", () => {
+    const state = upsertRule(
+      structuredClone(DEFAULT_STATE),
+      "series",
+      "netflix",
+      "title:show",
+      "Show",
+      { intro: true },
+    );
+    expect(validateImport(JSON.parse(JSON.stringify(state)))).toEqual(state);
+    expect(() =>
+      validateImport({
+        ...state,
+        serviceRules: {
+          netflix: {
+            serviceId: "netflix",
+            preferences: { intro: "false" },
+            updatedAt: 1,
+          },
+        },
+      }),
+    ).toThrow();
+    expect(() => validateImport({ enabled: "false" })).toThrow();
+    expect(() => validateImport({ stats: { intros: -1 } })).toThrow();
+    expect(() =>
+      validateImport({
+        seriesRules: {
+          "netflix::a": {
+            serviceId: "netflix",
+            seriesId: "b",
+            preferences: { intro: true },
+            updatedAt: 1,
+          },
+        },
+      }),
+    ).toThrow();
+  });
+  it("reverses only the skipped action and retains inherited preferences", () => {
+    let state = upsertRule(
+      structuredClone(DEFAULT_STATE),
+      "service",
+      "netflix",
+      null,
+      null,
+      { intro: true, recap: true },
+    );
+    state = applyMutation(state, { kind: "skip", action: "intro" });
+    state = applyMutation(state, {
+      kind: "pause",
+      serviceId: "netflix",
+      seriesId: "show",
+      seriesTitle: "Show",
+      action: "intro",
+      reversed: true,
+    });
+    expect(state.stats.intros).toBe(0);
+    expect(state.stats.estimatedMsSaved).toBe(0);
+    expect(resolvePreferences(state, "netflix", "show")).toMatchObject({
+      intro: false,
+      recap: true,
+    });
+    state = applyMutation(state, {
+      kind: "clear-session",
+      serviceId: "netflix",
+      seriesId: "show",
+    });
+    expect(resolvePreferences(state, "netflix", "show").intro).toBe(true);
+  });
+  it("clears session pauses at browser startup and ignores expired overrides", () => {
+    let state = upsertRule(
+      structuredClone(DEFAULT_STATE),
+      "service",
+      "netflix",
+      null,
+      null,
+      { intro: true },
+    );
+    state = upsertRule(state, "session", "netflix", null, null, {
+      intro: false,
+    });
+    state.sessionRules["netflix::unknown"]!.expiresAt = Date.now() - 1;
+    expect(resolvePreferences(state, "netflix", null).intro).toBe(true);
+    state = applyMutation(state, { kind: "reset", target: "startup" });
+    expect(state.sessionRules).toEqual({});
+    expect(state.serviceRules.netflix.preferences.intro).toBe(true);
+  });
+});

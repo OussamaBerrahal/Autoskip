@@ -13,6 +13,7 @@
         <p>Local preferences. No account. No cloud.</p>
       </header>
 
+      <p id="status" class="hint" role="status" aria-live="polite"></p>
       <section class="card">
         <h2>Services</h2>
         <div id="services" class="stack"></div>
@@ -29,7 +30,7 @@
           <input id="debug" type="checkbox" />
         </label>
         <label class="row">
-          <span>Interface language</span>
+          <span>In-player prompt language</span>
           <select id="locale">
             <option value="auto">Auto</option>
             <option value="en">English</option>
@@ -45,7 +46,9 @@
         <p id="stats"></p>
         <div class="actions">
           <button id="reset-session" type="button">Reset session stats</button>
-          <button id="reset-lifetime" type="button" class="danger">Reset lifetime stats</button>
+          <button id="reset-lifetime" type="button" class="danger">
+            Reset lifetime stats
+          </button>
         </div>
       </section>
 
@@ -54,16 +57,28 @@
         <div class="actions">
           <button id="export" type="button">Export preferences</button>
           <button id="import" type="button">Import preferences</button>
-          <input id="import-file" type="file" accept="application/json" hidden />
+          <input
+            id="import-file"
+            type="file"
+            accept="application/json"
+            hidden
+          />
         </div>
-        <p class="hint">Exports stay on your device. AutoSkip never uploads them.</p>
+        <button id="reset-all" type="button" class="danger">
+          Reset all local data
+        </button>
+        <p class="hint">
+          Exports include series preferences, prompt learning, and statistics.
+          Exports stay on your device. AutoSkip never uploads them.
+        </p>
       </section>
 
       <section class="card">
         <h2>Privacy</h2>
         <p>
-          AutoSkip stores rules and aggregate skip counts locally in extension storage.
-          It does not create accounts, serve ads, or send viewing history to a server.
+          AutoSkip stores rules and aggregate skip counts locally in extension
+          storage. It does not create accounts, serve ads, or send viewing
+          history to a server.
         </p>
       </section>
     </main>

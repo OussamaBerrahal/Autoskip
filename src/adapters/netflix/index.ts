@@ -1,5 +1,10 @@
 import type { StreamingAdapter } from "../../types";
-import { clickAction, detectControl, slugTitle, titleFromSelectors } from "../shared";
+import {
+  clickAction,
+  detectControl,
+  slugTitle,
+  titleFromSelectors,
+} from "../shared";
 
 const INTRO_SELECTORS = [
   '[data-uia="player-skip-intro"]',
@@ -34,12 +39,8 @@ export const netflixAdapter: StreamingAdapter = {
   },
 
   getSeriesId() {
-    const path = window.location.pathname;
-    const watchMatch = path.match(/\/watch\/(\d+)/);
-    if (watchMatch) return watchMatch[1]!;
-
-    const title = this.getSeriesTitle();
-    return slugTitle(title);
+    // A /watch ID identifies a video/episode, not a series.
+    return slugTitle(this.getSeriesTitle());
   },
 
   getSeriesTitle() {
@@ -47,7 +48,6 @@ export const netflixAdapter: StreamingAdapter = {
       '[data-uia="video-title"]',
       ".video-title h4",
       ".video-title",
-      "h4",
     ]);
   },
 
@@ -68,12 +68,12 @@ export const netflixAdapter: StreamingAdapter = {
   },
 
   skipIntro(action) {
-    clickAction(action);
+    return clickAction(action);
   },
   skipRecap(action) {
-    clickAction(action);
+    return clickAction(action);
   },
   continuePlayback(action) {
-    clickAction(action);
+    return clickAction(action);
   },
 };

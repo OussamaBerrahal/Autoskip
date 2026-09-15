@@ -23,9 +23,9 @@ export interface StreamingAdapter {
   detectRecap(): DetectedAction | null;
   detectCredits(): DetectedAction | null;
   detectStillWatching(): DetectedAction | null;
-  skipIntro(action: DetectedAction): void;
-  skipRecap(action: DetectedAction): void;
-  continuePlayback(action: DetectedAction): void;
+  skipIntro(action: DetectedAction): boolean;
+  skipRecap(action: DetectedAction): boolean;
+  continuePlayback(action: DetectedAction): boolean;
 }
 
 export interface ActionPreferences {
@@ -39,7 +39,7 @@ export interface RuleSet {
   serviceId: ServiceId;
   seriesId?: string;
   seriesTitle?: string;
-  preferences: ActionPreferences;
+  preferences: Partial<ActionPreferences>;
   updatedAt: number;
   /** Session rules expire at this timestamp (ms). */
   expiresAt?: number;
@@ -70,14 +70,14 @@ export interface AutoSkipState {
   sessionRules: Record<string, RuleSet>;
   /** Lifetime aggregates. */
   stats: StatsBucket;
-  /** Resets when the browser session ends (extension memory); also mirrored for popup. */
+  /** Reset when Chrome starts. Stored locally for popup access. */
   sessionStats: StatsBucket;
   /** Prompt history: `${serviceId}::${seriesId}::${actionType}` → manual skip count. */
   manualSkipCounts: Record<string, number>;
   dismissedPrompts: Record<string, boolean>;
   /** First-encounter prompt already shown for a control signature key. */
   offeredFirstEncounter: Record<string, boolean>;
-  /** Debug logging to extension storage. */
+  /** Enables diagnostic console messages. */
   debugLogging: boolean;
   locale: string;
 }
