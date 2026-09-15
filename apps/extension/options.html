@@ -7,103 +7,192 @@
     <link rel="stylesheet" href="./options.css" />
   </head>
   <body>
-    <main class="page">
-      <header>
-        <p class="brand">⏵⏵ AutoSkip</p>
-        <h1>Make yourself comfortable.</h1>
-        <p>Your settings, saved automatically on this device.</p>
-      </header>
-      <p id="status" class="hint" role="status" aria-live="polite"></p>
-      <section class="card">
-        <h2>The essentials</h2>
-        <label class="row"
-          ><span>AutoSkip on</span><input id="enabled" type="checkbox"
-        /></label>
-        <label class="row"
-          ><span>Messages while watching</span
-          ><select id="locale">
-            <option value="auto">Match my browser</option>
-            <option value="en">English</option>
-            <option value="de">Deutsch</option>
-            <option value="fr">Français</option>
-            <option value="es">Español</option>
-          </select></label
+    <div class="settings-shell">
+      <aside class="sidebar">
+        <a class="brand" href="./options.html"
+          ><span aria-hidden="true">⏵⏵</span> AutoSkip</a
         >
-      </section>
-      <section class="card">
-        <h2>Where AutoSkip works</h2>
-        <p class="hint">
-          Choose your streaming apps. To choose what gets skipped, open AutoSkip
-          while watching a show.
-        </p>
-        <div id="services" class="stack"></div>
-      </section>
-      <section class="card">
-        <h2>Your choices, kept safe</h2>
-        <p class="hint">
-          Save a copy of your settings to move them to another browser or
-          restore them later.
-        </p>
-        <div class="actions">
-          <button id="export" type="button">Save a backup</button
-          ><button id="import" type="button" class="secondary">
-            Restore a backup</button
-          ><input
-            id="import-file"
-            type="file"
-            accept="application/json"
-            hidden
-          />
+        <nav aria-label="Settings sections">
+          <button type="button" data-view="watching" aria-current="page">
+            Watching
+          </button>
+          <button type="button" data-view="shows">
+            Your shows <span id="show-count">0</span>
+          </button>
+          <button type="button" data-view="backup">Backup &amp; help</button>
+        </nav>
+        <div class="sidebar-foot">
+          <a href="./welcome.html">Getting started ↗</a
+          ><span id="version"></span>
         </div>
-      </section>
-      <details class="card">
-        <summary>Activity &amp; resets</summary>
-        <p id="stats"></p>
-        <p class="hint">
-          Counts from older versions may include clicks that didn't change
-          playback. Undo removes the skip from your count. One-time skips aren't
-          included.
-        </p>
-        <div class="actions">
-          <button id="reset-session" class="secondary" type="button">
-            Clear current count</button
-          ><button id="reset-lifetime" class="secondary" type="button">
-            Clear all counts
+      </aside>
+      <main class="page">
+        <header>
+          <p class="eyebrow">YOUR AUTOSKIP</p>
+          <h1 id="page-title">Make yourself comfortable.</h1>
+          <p id="page-description">Choose what gets skipped. We'll remember.</p>
+        </header>
+        <p id="status" class="notice" role="status" aria-live="polite"></p>
+        <div id="global-notice" class="notice" hidden>
+          <span id="global-message"></span
+          ><button id="resume-global" type="button" class="text-button" hidden>
+            Resume now
           </button>
         </div>
-        <div class="divider">
-          <h2>Start fresh</h2>
-          <p class="hint">
-            Remove your saved choices, prompt history and counts. Save a backup
-            first if you'd like to keep them.
-          </p>
-          <button id="reset-all" type="button" class="danger">
-            Reset AutoSkip
-          </button>
+        <div data-section="watching" class="section-stack">
+          <section class="card">
+            <div class="card-heading">
+              <h2>The essentials</h2>
+              <span class="saved-note">Changes save automatically</span>
+            </div>
+            <label class="row"
+              ><span>AutoSkip on</span><input id="enabled" type="checkbox"
+            /></label>
+            <label class="row"
+              ><span>Messages while watching</span
+              ><select id="locale">
+                <option value="auto">Match my browser</option>
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+              </select></label
+            >
+          </section>
+          <section>
+            <h2>Your streaming apps</h2>
+            <p class="hint section-intro">
+              Choose what to skip in each app. A show's own choices take
+              priority.
+            </p>
+            <div id="services" class="section-stack"></div>
+          </section>
         </div>
-      </details>
-      <details class="card">
-        <summary>Troubleshooting</summary>
-        <label class="row"
-          ><span>Diagnostic logging</span><input id="debug" type="checkbox"
-        /></label>
-        <p class="hint">
-          Adds messages to the browser's console to help investigate a problem.
-          Nothing is sent to us.
-        </p>
-        <p class="hint">
-          Undo also pauses that action for the current show. Select Resume in
-          the popup to start it again. Pauses end when Chrome restarts or after
-          four hours.
-        </p>
-      </details>
-      <footer>
-        No account. No ads. No tracking.<br /><span
-          >Your preferences and counts stay in this browser. Backups are
-          downloaded to your device.</span
-        >
-      </footer>
-    </main>
+        <div data-section="shows" class="section-stack" hidden>
+          <div class="filters">
+            <label class="search-label"
+              ><span class="sr-only">Find a show</span
+              ><input
+                id="show-search"
+                type="search"
+                placeholder="Find a show…" /></label
+            ><select
+              id="show-service"
+              aria-label="Filter shows by streaming app"
+            >
+              <option value="all">All apps</option>
+            </select>
+          </div>
+          <p id="shows-empty" class="empty"></p>
+          <div id="shows" class="section-stack"></div>
+        </div>
+        <div data-section="backup" class="section-stack" hidden>
+          <section class="card">
+            <h2>Your choices, kept safe</h2>
+            <p class="hint">
+              Save a copy of your settings to move them to another browser or
+              restore them later.
+            </p>
+            <div class="actions">
+              <button id="export" type="button">Save a backup</button
+              ><button id="import" type="button" class="secondary">
+                Restore a backup</button
+              ><input
+                id="import-file"
+                type="file"
+                accept="application/json"
+                hidden
+              />
+            </div>
+          </section>
+          <section class="card">
+            <h2>A little help</h2>
+            <details class="faq">
+              <summary>What do the four switches do?</summary>
+              <p>
+                Skip intros and Skip recaps move past those sections when the
+                player offers a skip button. Play next episode uses an end card
+                when the episode is ending. Keep watching answers “Are you still
+                watching?” without changing episodes.
+              </p>
+            </details>
+            <details class="faq">
+              <summary>Why didn't it play the next episode?</summary>
+              <p>
+                AutoSkip needs a supported end card near the end and at least 30
+                seconds of playback in that episode. Jumping straight to the
+                credits won't trigger it. The streaming app's own autoplay works
+                separately.
+              </p>
+            </details>
+            <details class="faq">
+              <summary>What happens when I use Undo?</summary>
+              <p>
+                Undo returns you to before an intro or recap skip and pauses
+                that action for the current show. Use Resume in the popup to
+                start it again. That pause also ends after four hours or when
+                Chrome restarts.
+              </p>
+            </details>
+            <details class="faq">
+              <summary>I updated AutoSkip, but nothing changed.</summary>
+              <p>
+                Reload AutoSkip in Chrome's extension manager, then reload your
+                streaming tab. Open the player controls briefly so AutoSkip can
+                read the show name.
+              </p>
+            </details>
+          </section>
+          <details class="card">
+            <summary>Activity &amp; resets</summary>
+            <p id="stats"></p>
+            <p class="hint">
+              Older counts may include clicks that didn't change playback. Undo
+              removes a count. One-time skips aren't included.
+            </p>
+            <div class="actions">
+              <button id="reset-session" class="secondary" type="button">
+                Clear current count</button
+              ><button id="reset-lifetime" class="secondary" type="button">
+                Clear all counts
+              </button>
+            </div>
+            <div class="divider">
+              <h2>Start fresh</h2>
+              <p class="hint">
+                Remove saved choices, prompt history and counts. Save a backup
+                first if you'd like to keep them.
+              </p>
+              <button id="reset-all" type="button" class="danger">
+                Reset AutoSkip
+              </button>
+            </div>
+          </details>
+          <details class="card">
+            <summary>Troubleshooting</summary>
+            <label class="row"
+              ><span>Diagnostic logging</span><input id="debug" type="checkbox"
+            /></label>
+            <p class="hint">
+              Adds messages to the browser console to help investigate a
+              problem. Nothing is sent to us.
+            </p>
+            <a
+              class="support-link"
+              href="https://github.com/OussamaBerrahal/Autoskip/issues"
+              target="_blank"
+              rel="noreferrer"
+              >Report a problem ↗</a
+            >
+          </details>
+        </div>
+        <footer>
+          No account. No ads. No tracking.<br /><span
+            >Your choices stay on this device.</span
+          >
+        </footer>
+      </main>
+    </div>
     <script type="module" src="./options.ts"></script>
   </body>
 </html>

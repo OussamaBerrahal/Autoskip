@@ -13,6 +13,24 @@
 No terminal or build commands are needed when using the prepared ZIP or local `dist/`.
 For a fresh checkout: `npm ci && npm run build`.
 
+## New in 1.1: everyday checks
+
+- Fresh installation opens the welcome page. Nothing skips until you choose; selecting only Netflix must not set skip choices on other apps.
+- In the popup, choose **Only Friends** or **All Netflix shows** and verify there is one set of switches.
+- Open Settings → **Your shows**, find Friends, change a choice, then restore its Netflix settings.
+- Click **Pause for 30 min**. All AutoSkip actions/prompts pause; **Resume AutoSkip** restores saved choices. Turning **Off** remains off without a timer.
+- Check light/dark appearance and keyboard navigation. The ordinary popup should fit without scrolling.
+- Save a backup, restore it, and verify show choices and counts survive. Cancelling a restore leaves data intact.
+
+## Friends regression checks
+
+- With **Play next episode** enabled, show Netflix's normal player controls mid-episode. Its toolbar Next Episode button must stay untouched.
+- Resume an already-watched episode near the end. AutoSkip must not immediately advance through several episodes.
+- Watch at least 30 seconds and reach the actual end card naturally. At most one automatic advance may occur. Seeking directly to the credits is intentionally insufficient.
+- Show Netflix's controls once, then hide them. The popup should retain **Friends** for that episode.
+- Verify intro and recap skips independently. Undo should actually rewind and reduce the automatic count.
+- Netflix's own autoplay is independent; distinguish a native countdown advance from an AutoSkip action.
+
 ## Test each service
 
 Repeat for Netflix, Prime Video, Disney+, and Apple TV+. Treat the rows as independent scenarios: reset local data between conflicting preference/discovery scenarios. Start with **Settings → Activity & resets → Reset AutoSkip** if you want a clean test; export a backup first if keeping existing preferences.

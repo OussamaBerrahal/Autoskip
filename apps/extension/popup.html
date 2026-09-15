@@ -23,6 +23,7 @@
           <span class="track" aria-hidden="true"></span>
         </label>
       </header>
+      <p id="global-pause" class="global-pause" role="status" hidden></p>
       <p id="status" class="notice error" role="status"></p>
       <section id="empty" class="empty" hidden>
         <span class="empty-icon" aria-hidden="true">▶</span>
@@ -135,7 +136,9 @@
         </div>
       </section>
       <footer class="footer">
-        <span>Saved on this device</span>
+        <button id="snooze" class="text-button" type="button">
+          Pause for 30 min
+        </button>
         <a
           id="options-link"
           href="./options.html"

@@ -34,9 +34,20 @@ const popupImage = await popup
   .screenshot({ path: "artifacts/popup-preview.png" });
 const options = await h.context.newPage();
 await options.goto(`chrome-extension://${h.id}/options.html`);
-await expect(options.locator("#services label")).toHaveCount(4);
-await options.setViewportSize({ width: 820, height: 1300 });
-const optionsImage = await options.locator(".page").screenshot();
+await expect(options.locator("#services .app-card")).toHaveCount(4);
+await options.setViewportSize({ width: 1080, height: 900 });
+await options
+  .locator(".settings-shell")
+  .screenshot({ path: "artifacts/settings-preview.png" });
+const welcome = await h.context.newPage();
+await welcome.goto(`chrome-extension://${h.id}/welcome.html`);
+await welcome.setViewportSize({ width: 1180, height: 840 });
+await welcome.screenshot({ path: "artifacts/welcome-preview.png" });
+await popup.emulateMedia({ colorScheme: "dark" });
+await popup
+  .locator("body")
+  .screenshot({ path: "artifacts/popup-dark-preview.png" });
+await popup.emulateMedia({ colorScheme: "light" });
 const canvas = await h.context.newPage();
 await canvas.setViewportSize({ width: 1280, height: 800 });
 const icon = readFileSync("apps/extension/icons/icon128.png").toString(
@@ -53,15 +64,13 @@ await canvas.setContent(
   ),
 );
 await canvas.screenshot({ path: `${out}/03-popup-rules.png` });
-await canvas.setContent(
-  html(
-    "Preferences stay<br>with you.",
-    "Choose where AutoSkip works.<br>Save a backup of your choices.<br>Everything stays on your device.",
-    optionsImage,
-    "options",
-  ),
-);
-await canvas.screenshot({ path: `${out}/04-options.png` });
+await options.setViewportSize({ width: 1280, height: 800 });
+await options.getByRole("button", { name: "Your shows" }).click();
+await options.locator(".show-card summary").first().click();
+await options.screenshot({ path: `${out}/04-options.png` });
+await options.screenshot({ path: "artifacts/shows-preview.png" });
+await welcome.setViewportSize({ width: 1280, height: 800 });
+await welcome.screenshot({ path: `${out}/05-welcome.png` });
 await canvas.setViewportSize({ width: 440, height: 280 });
 await canvas.setContent(
   `<html><body style="margin:0;background:#123b2e;color:#f4fcf7;font-family:Arial;width:440px;height:280px;padding:32px;box-sizing:border-box"><div style="display:flex;align-items:center;gap:13px;font-size:27px;font-weight:bold"><img width="48" height="48" src="data:image/png;base64,${icon}">AutoSkip</div><h1 style="font-size:36px;letter-spacing:-1.4px;line-height:1.12;margin:23px 0 18px">You decide once.<br>AutoSkip remembers.</h1><p style="font-size:14px;color:#b9dccc">Streaming shortcuts. Local preferences.</p></body></html>`,

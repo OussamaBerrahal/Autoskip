@@ -92,3 +92,35 @@ describe("state mutations and imports", () => {
     expect(state.serviceRules.netflix.preferences.intro).toBe(true);
   });
 });
+
+it("quick setup changes only intros/recaps on selected apps and preserves show overrides", () => {
+  let state = upsertRule(
+    structuredClone(DEFAULT_STATE),
+    "service",
+    "netflix",
+    null,
+    null,
+    { credits: true },
+  );
+  state = upsertRule(state, "series", "netflix", "friends", "Friends", {
+    intro: false,
+  });
+  const next = applyMutation(state, { kind: "setup", serviceIds: ["netflix"] });
+  expect(next.serviceRules.netflix.preferences).toEqual({
+    intro: true,
+    recap: true,
+    credits: true,
+  });
+  expect(next.enabled).toBe(true);
+  expect(next.pausedUntil).toBe(0);
+  expect(next.seriesRules).toEqual(state.seriesRules);
+  expect(next.serviceRules["prime-video"]).toBeUndefined();
+});
+
+it("loads older backups without a pause and validates pause timestamps", () => {
+  const old = { ...DEFAULT_STATE } as Partial<typeof DEFAULT_STATE>;
+  delete old.pausedUntil;
+  expect(validateImport(old).pausedUntil).toBe(0);
+  expect(() => validateImport({ ...old, pausedUntil: "later" })).toThrow();
+  expect(() => validateImport({ ...old, pausedUntil: -1 })).toThrow();
+});

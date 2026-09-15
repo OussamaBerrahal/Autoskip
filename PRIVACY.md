@@ -44,3 +44,7 @@ No `activeTab`, `tabs`, cookies, network interception, remote code, or broad acc
 Your streaming service operates independently under its own privacy policy. AutoSkip does not access your account credentials or bypass access restrictions.
 
 For questions or bugs, open an issue at [OussamaBerrahal/Autoskip](https://github.com/OussamaBerrahal/Autoskip/issues). Do not include passwords, account details, authentication tokens, or private viewing data in public issues.
+
+## Temporary pause
+
+A global 30-minute pause stores only its expiry timestamp locally. It does not record what you watch. Saved show management and welcome setup use the same local preference records described above; no new permissions or network services are required.

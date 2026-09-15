@@ -81,3 +81,18 @@ it("keeps unrelated service preferences when one series/session action changes",
   });
   expect(resolvePreferences(state, "netflix", "show").recap).toBe(true);
 });
+
+it("a temporary global pause expires without changing saved choices", () => {
+  const state = structuredClone(DEFAULT_STATE);
+  state.serviceRules.netflix = {
+    serviceId: "netflix",
+    preferences: { intro: true },
+    updatedAt: Date.now(),
+  };
+  state.pausedUntil = Date.now() + 30 * 60000;
+  expect(resolvePreferences(state, "netflix", null).intro).toBe(false);
+  state.pausedUntil = Date.now() - 1;
+  expect(resolvePreferences(state, "netflix", null).intro).toBe(true);
+  state.enabled = false;
+  expect(resolvePreferences(state, "netflix", null).intro).toBe(false);
+});

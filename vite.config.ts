@@ -26,7 +26,7 @@ function copyExtensionAssets() {
         },
       );
 
-      for (const page of ["popup", "options"]) {
+      for (const page of ["popup", "options", "welcome"]) {
         const nested = resolve(dist, `apps/extension/${page}.html`);
         try {
           let html = readFileSync(nested, "utf8");
@@ -63,6 +63,7 @@ export default defineConfig({
         background: resolve(__dirname, "apps/extension/background.ts"),
         popup: resolve(__dirname, "apps/extension/popup.html"),
         options: resolve(__dirname, "apps/extension/options.html"),
+        welcome: resolve(__dirname, "apps/extension/welcome.html"),
       },
       output: {
         entryFileNames: "[name].js",

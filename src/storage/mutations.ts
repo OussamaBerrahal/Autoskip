@@ -24,9 +24,13 @@ export type StateMutation =
   | {
       kind: "settings";
       patch: Partial<
-        Pick<AutoSkipState, "enabled" | "debugLogging" | "locale">
+        Pick<
+          AutoSkipState,
+          "enabled" | "debugLogging" | "locale" | "pausedUntil"
+        >
       >;
     }
+  | { kind: "setup"; serviceIds: ServiceId[] }
   | { kind: "service"; serviceId: ServiceId; enabled: boolean }
   | ({
       kind: "rule";
@@ -49,6 +53,18 @@ export function applyMutation(
   switch (mutation.kind) {
     case "settings":
       return { ...state, ...mutation.patch };
+    case "setup": {
+      if (!mutation.serviceIds.length) return state;
+      let next = { ...state, enabled: true, pausedUntil: 0 };
+      for (const serviceId of mutation.serviceIds) {
+        next = setServiceEnabled(next, serviceId, true);
+        next = upsertRule(next, "service", serviceId, null, null, {
+          intro: true,
+          recap: true,
+        });
+      }
+      return next;
+    }
     case "service":
       return setServiceEnabled(state, mutation.serviceId, mutation.enabled);
     case "rule":

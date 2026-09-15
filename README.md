@@ -6,17 +6,21 @@ AutoSkip is a free and open-source Chromium extension that remembers repetitive 
 
 > **You decide once. AutoSkip remembers.**
 
-> **Status: 1.0.1 alpha, ready for live streaming tests.** Production packaging and automated browser checks are in place. Current service-player compatibility still needs the owner’s validation. See [the test checklist](docs/test-checklist.md).
+> **Status: 1.1.0 alpha, ready for live streaming tests.** Production packaging and automated browser checks are in place. Current service-player compatibility still needs the owner’s validation. See [the test checklist](docs/test-checklist.md).
 
 ## Features (V1)
 
+- **Welcome setup** — explicitly enable intro/recap skipping on the streaming apps you choose
+- **Saved shows** — search and edit show-specific choices in Settings
+- **Pause for 30 minutes** — resume automatically without losing your choices
+- **Light/dark appearance** — follows your system, with keyboard-friendly controls
 - **First-encounter prompt** — Skip once · Always for this show · Always on Netflix
 - **Smart prompt** — learns from repeated manual skips (local only)
 - **Rules hierarchy** — session → series → service
 - **Undo for seekable intro/recap skips** — restores playback and pauses that action; other actions offer **Pause this action**
 - **Four explained switches** with a single show/app scope selector
 - **Per-service enable toggles**
-- **Settings** — prompt language, streaming apps, backup/restore, and tucked-away activity/troubleshooting
+- **Settings** — per-app skip choices, saved shows, backup/restore, and tucked-away activity/troubleshooting
 - **Local-first privacy** — no account, tracking, ads, or backend
 
 ## Supported platforms
@@ -43,7 +47,7 @@ node scripts/package.mjs
 3. **Load unpacked** → select the `dist/` folder
 4. Open a supported streaming site
 5. Reload supported streaming tabs after installing/updating.
-6. When Skip Intro appears, choose **Always for this show** if identified, or choose service defaults explicitly.
+6. On first install, use the welcome page to choose where intros/recaps are skipped, or choose as you watch. Updates preserve existing choices.
 
 The prepared `dist/` or extracted ZIP can be loaded without running build commands. Follow [the live-test checklist](docs/test-checklist.md). Store materials are in [docs/store/listing.md](docs/store/listing.md).
 
@@ -55,7 +59,7 @@ See [the behavior guide](docs/behavior.md) for button meanings, the Friends inve
 
 - Series matching uses available player titles; episode URLs are not treated as series IDs. If no series is identified, only explicit app-wide choices are offered. Netflix titles are remembered while the same episode’s controls hide.
 - Undo lasts eight seconds and requires the same accessible, seekable video/URL. It does not navigate backwards after Next episode.
-- Session pauses expire after four hours or at browser startup. Use **Resume** to clear one sooner.
+- Session pauses expire after four hours or at browser startup. Use **Resume** to clear one sooner. The global **Pause for 30 min** timer is separate and expires by the clock.
 - Older counts may include ineffective clicks. New counts check playback changes; time-saved estimates are no longer displayed. Popup and Settings are English; in-player prompts have English/French/German/Spanish strings with English fallback.
 - Current DRM players, regional UI variants, and service fullscreen behavior must be tested live.
 

@@ -26,7 +26,15 @@ If Netflix's title controls disappear, AutoSkip remembers the title for the curr
 
 These deliberately conservative rules may leave an end card for the viewer to click, particularly after seeking directly to the credits. Netflix's own autoplay remains separate from AutoSkip.
 
+## Getting started and saved shows
+
+The welcome page opens on a new installation, not on ordinary updates. **Skip intros & recaps** explicitly enables AutoSkip, clears a temporary global pause, and enables those two actions for the selected streaming apps. Other actions and saved show overrides are preserved. **I'll choose as I watch** leaves all preferences unchanged.
+
+Settings → **Watching** manages each streaming app's choices. **Your shows** lets the viewer find saved shows, edit their overrides, or return a show to its app's choices. **Backup & help** includes validated backup/restore, help, activity, and reset tools. The interface follows the system's light/dark appearance.
+
 ## Undo and pause
+
+**Pause for 30 min** temporarily stops automatic actions and preference prompts across all supported tabs. It leaves saved choices intact and expires by the clock, including across browser restarts. **Resume AutoSkip** ends it early. Switching AutoSkip **Off** has no timer; it remains off until explicitly turned on. These controls are separate from the action-specific pauses below.
 
 An automatic intro or recap offers **Undo** for eight seconds when the same video is seekable. Undo restores the previous position, removes the skip from the automatic count, and pauses that action for the current show. **Resume** restores the saved choices. These action pauses expire after four hours or when Chrome restarts.
 

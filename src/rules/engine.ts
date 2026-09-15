@@ -16,7 +16,11 @@ export function resolvePreferences(
   serviceId: ServiceId,
   seriesId: string | null,
 ): ActionPreferences {
-  if (!state.enabled || state.services[serviceId]?.enabled === false) {
+  if (
+    !state.enabled ||
+    isTemporarilyPaused(state) ||
+    state.services[serviceId]?.enabled === false
+  ) {
     return { ...DEFAULT_PREFERENCES };
   }
 
@@ -138,4 +142,8 @@ export function getSeriesRule(
   seriesId: string,
 ): RuleSet | undefined {
   return state.seriesRules[seriesKey(serviceId, seriesId)];
+}
+
+export function isTemporarilyPaused(state: AutoSkipState): boolean {
+  return state.pausedUntil > Date.now();
 }

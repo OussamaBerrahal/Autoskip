@@ -16,7 +16,10 @@ You decide once. AutoSkip remembers.
 
 AutoSkip handles repetitive streaming playback buttons according to choices you make. When an intro or recap appears, skip it once, remember the choice for that series, or set a default for the service.
 
+• Get started with an explicit choice of streaming apps, or choose as you watch.
 • Choose intro, recap, next-episode, and keep-watching automation separately.
+• Search and manage your saved shows from Settings.
+• Pause for 30 minutes and resume automatically. Follow your system’s light or dark appearance.
 • Use per-series preferences when the player exposes an identifiable series.
 • Keep service defaults and override only the actions you choose.
 • Receive a suggestion after repeated manual skips. Preferences are never enabled without your choice.
@@ -48,7 +51,7 @@ No `activeTab`, `tabs`, `scripting`, network interception, cookies, or remote-co
 
 ## Data disclosures
 
-- Data remains local: selected series titles/identifiers, saved rules, prompt history/manual-skip counts, aggregate statistics, enabled services, locale, debug preference.
+- Data remains local: selected series titles/identifiers, saved rules, prompt history/manual-skip counts, aggregate statistics, enabled services, temporary global pause expiry, locale, debug preference.
 - No account credentials, payment information, or communication content is read.
 - No user data is collected or transmitted off-device by the extension.
 - Export is user initiated and creates a local JSON file.
@@ -65,10 +68,10 @@ Use these facts to answer the dashboard's current privacy questions. Owner decla
 
 ## Upload assets
 
-- ZIP: `artifacts/autoskip-1.0.1.zip` (manifest at archive root)
+- ZIP: `artifacts/autoskip-1.1.0.zip` (manifest at archive root)
 - Icon: `apps/extension/icons/icon128.png`
 - Small promotional image: `docs/store/images/small-promo-440x280.png`
-- Screenshots (1280 × 800): `01-player-prompt.png`, `02-player-undo.png`, `03-popup-rules.png`, `04-options.png` in `docs/store/images/`
+- Screenshots (1280 × 800): `01-player-prompt.png`, `02-player-undo.png`, `03-popup-rules.png`, `04-options.png`, `05-welcome.png` in `docs/store/images/`
 
 Screenshots use the actual extension interface and a clearly labelled demo player. They contain no streaming-service artwork, private account information, or claims of live-site validation. Regenerate with `npm run screenshots` after building. A demo GIF is optional and not required for this submission package.
 
@@ -77,7 +80,7 @@ Asset dimensions and required assets were checked against [Chrome's image requir
 ## Submission sequence
 
 1. Complete the live-site checklist in `docs/test-checklist.md` and fix any failures.
-2. Merge the tested changes; remove `version_name: 1.0.1 alpha` for a stable release and rerun all checks/package/screenshots.
+2. Merge the tested changes; remove `version_name: 1.1.0 alpha` for a stable release and rerun all checks/package/screenshots.
 3. Review this copy, confirm owner/contact details in the developer dashboard, and upload the ZIP and images.
 4. Complete the dashboard privacy declarations, preview the listing, and submit for review.
 

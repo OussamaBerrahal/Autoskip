@@ -16,7 +16,7 @@ for (const entry of manifest.content_scripts) {
   for (const file of entry.js)
     new Script(readFileSync(`dist/${file}`, "utf8"), { filename: file });
 }
-for (const page of ["popup", "options"]) {
+for (const page of ["popup", "options", "welcome"]) {
   const html = readFileSync(`dist/${page}.html`, "utf8");
   for (const [, asset] of html.matchAll(
     /(?:src|href)="(\.[^"]+\.(?:js|css))"/g,

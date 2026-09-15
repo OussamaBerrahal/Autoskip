@@ -68,6 +68,7 @@ export function validateImport(value: unknown): AutoSkipState {
     result = structuredClone(DEFAULT_STATE);
   for (const key of ["enabled", "debugLogging"] as const)
     if (key in input) result[key] = flag(input[key]);
+  if ("pausedUntil" in input) result.pausedUntil = count(input.pausedUntil);
   if ("locale" in input) {
     if (!["auto", "en", "de", "fr", "es"].includes(String(input.locale)))
       throw new Error("Unsupported language");

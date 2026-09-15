@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AutoSkip",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Automatically skip intros and recaps, advance episodes, and keep watching with preferences saved only on your device.",
   "permissions": [
     "storage"
@@ -56,6 +56,6 @@
       "run_at": "document_idle"
     }
   ],
-  "version_name": "1.0.1 alpha",
+  "version_name": "1.1.0 alpha",
   "minimum_chrome_version": "120"
 }

@@ -13,7 +13,9 @@ function enqueue(mutation: StateMutation) {
 }
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === "install")
-    void enqueue({ kind: "reset", target: "startup" });
+    void enqueue({ kind: "reset", target: "startup" }).then(() =>
+      chrome.tabs.create({ url: chrome.runtime.getURL("welcome.html") }),
+    );
 });
 chrome.runtime.onStartup.addListener(() => {
   void enqueue({ kind: "reset", target: "startup" });

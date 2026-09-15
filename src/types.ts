@@ -60,6 +60,8 @@ export interface ServiceSettings {
 
 export interface AutoSkipState {
   enabled: boolean;
+  /** Temporary global pause, expressed as an expiry timestamp. Zero means active. */
+  pausedUntil: number;
   /** Per-service enable flags. */
   services: Record<ServiceId, ServiceSettings>;
   /** Service-level defaults keyed by service id. */
@@ -119,6 +121,7 @@ export const DEFAULT_SERVICES: Record<ServiceId, ServiceSettings> = {
 
 export const DEFAULT_STATE: AutoSkipState = {
   enabled: true,
+  pausedUntil: 0,
   services: structuredClone(DEFAULT_SERVICES),
   serviceRules: {},
   seriesRules: {},

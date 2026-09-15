@@ -1,4 +1,7 @@
-import { resolvePreferences } from "../../src/rules/engine";
+import {
+  resolvePreferences,
+  isTemporarilyPaused,
+} from "../../src/rules/engine";
 import type { ContentContextResponse } from "../../src/messaging";
 import { loadState, seriesKey, sessionKey } from "../../src/storage/state";
 import { mutateState } from "../../src/storage/mutations";
@@ -35,8 +38,21 @@ async function refresh(): Promise<void> {
   activeSeriesId = context?.seriesId ?? null;
   activeSeriesTitle = context?.seriesTitle ?? null;
   const name = context?.serviceName ?? "";
+  const paused = isTemporarilyPaused(state);
+  const minutes = Math.max(
+    1,
+    Math.ceil((state.pausedUntil - Date.now()) / 60000),
+  );
+  $("#snooze").textContent = paused ? "Resume AutoSkip" : "Pause for 30 min";
+  $("#snooze").hidden = !state.enabled;
+  $("#global-pause").hidden = !paused || !state.enabled;
+  $("#global-pause").textContent = `Paused · resumes in ${minutes} min`;
   enabledInput.checked = state.enabled;
-  $("#enabled-label").textContent = state.enabled ? "On" : "Off";
+  $("#enabled-label").textContent = state.enabled
+    ? paused
+      ? "Paused"
+      : "On"
+    : "Off";
   $("#empty").hidden = Boolean(activeService);
   $("#player-settings").hidden = !activeService;
   if (!activeService) {
@@ -69,6 +85,7 @@ async function refresh(): Promise<void> {
     {
       ...state,
       enabled: true,
+      pausedUntil: 0,
       services: { ...state.services, [activeService]: { enabled: true } },
       sessionRules: {},
     },
@@ -89,7 +106,7 @@ async function refresh(): Promise<void> {
       ? `${activeSeriesTitle ?? "This show"} has its own choices. Select it above to change them.`
       : "";
   const session = state.sessionRules[sessionKey(activeService, activeSeriesId)];
-  const paused = Object.entries(session?.preferences ?? {})
+  const pausedActions = Object.entries(session?.preferences ?? {})
     .filter(([, value]) => value === false)
     .map(
       ([action]) =>
@@ -100,9 +117,9 @@ async function refresh(): Promise<void> {
           stillWatching: "Keep watching",
         })[action],
     );
-  $("#pause-notice").hidden = paused.length === 0;
+  $("#pause-notice").hidden = pausedActions.length === 0;
   $("#pause-hint").textContent =
-    `${paused.join(", ")} ${paused.length === 1 ? "is" : "are"} paused for now.`;
+    `${pausedActions.join(", ")} ${pausedActions.length === 1 ? "is" : "are"} paused for now.`;
 }
 function run(action: () => Promise<unknown>) {
   statusEl.textContent = "";
@@ -114,7 +131,10 @@ function run(action: () => Promise<unknown>) {
 }
 enabledInput.addEventListener("change", () =>
   run(() =>
-    mutateState({ kind: "settings", patch: { enabled: enabledInput.checked } }),
+    mutateState({
+      kind: "settings",
+      patch: { enabled: enabledInput.checked, pausedUntil: 0 },
+    }),
   ),
 );
 scopeSelect.addEventListener("change", () => {
@@ -167,6 +187,20 @@ $("#options-link").addEventListener("click", (event) => {
   event.preventDefault();
   void chrome.runtime.openOptionsPage();
 });
+$("#snooze").addEventListener("click", () =>
+  run(async () => {
+    const state = await loadState();
+    await mutateState({
+      kind: "settings",
+      patch: {
+        pausedUntil: isTemporarilyPaused(state) ? 0 : Date.now() + 30 * 60000,
+      },
+    });
+  }),
+);
+window.setInterval(() => {
+  void refresh();
+}, 30000);
 chrome.storage.onChanged.addListener(() => {
   void refresh();
 });

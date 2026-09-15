@@ -9,7 +9,11 @@ import {
 } from "./playback";
 import { PlaybackGuard } from "./guard";
 import { t, toastMessage } from "../i18n/messages";
-import { resolvePreferences, shouldAutomate } from "../rules/engine";
+import {
+  resolvePreferences,
+  shouldAutomate,
+  isTemporarilyPaused,
+} from "../rules/engine";
 import { loadState, promptKey, seriesKey, sessionKey } from "../storage/state";
 import { mutateState, type RuleContext } from "../storage/mutations";
 import type { AutoSkipState, DetectedAction, StreamingAdapter } from "../types";
@@ -116,7 +120,12 @@ async function applyChoice(
   )
     return;
   const state = await loadState();
-  if (!state.enabled || !state.services[adapter.id].enabled) return;
+  if (
+    !state.enabled ||
+    isTemporarilyPaused(state) ||
+    !state.services[adapter.id].enabled
+  )
+    return;
   const key = promptKey(ctx.serviceId, ctx.seriesId, action.type);
   await mutateState({ kind: "prompt", key, dismissed: choice === "dismiss" });
   if (choice === "dismiss") return;
@@ -158,6 +167,7 @@ async function onDocumentClick(event: MouseEvent): Promise<void> {
   const state = await loadState();
   if (
     !state.enabled ||
+    isTemporarilyPaused(state) ||
     !state.services[adapter.id].enabled ||
     shouldAutomate(state, adapter.id, ctx.seriesId, action.type)
   )
@@ -203,7 +213,11 @@ async function scan(): Promise<void> {
     });
     const state = await loadState();
     if (currentGeneration !== generation || !observer) return;
-    if (!state.enabled || !state.services[adapter.id].enabled) {
+    if (
+      !state.enabled ||
+      isTemporarilyPaused(state) ||
+      !state.services[adapter.id].enabled
+    ) {
       dismissPrompt();
       return;
     }
