@@ -1,5 +1,10 @@
 import type { StreamingAdapter } from "../../types";
-import { clickAction, detectControl, slugTitle, titleFromSelectors } from "../shared";
+import {
+  clickAction,
+  detectControl,
+  slugTitle,
+  titleFromSelectors,
+} from "../shared";
 
 export const primeVideoAdapter: StreamingAdapter = {
   id: "prime-video",
@@ -14,14 +19,7 @@ export const primeVideoAdapter: StreamingAdapter = {
   },
 
   getSeriesId() {
-    const params = new URLSearchParams(window.location.search);
-    return (
-      params.get("gti") ||
-      params.get("asin") ||
-      document.querySelector("[data-title-id]")?.getAttribute("data-title-id") ||
-      document.querySelector("[data-asin]")?.getAttribute("data-asin") ||
-      slugTitle(this.getSeriesTitle())
-    );
+    return slugTitle(this.getSeriesTitle());
   },
 
   getSeriesTitle() {
@@ -29,48 +27,40 @@ export const primeVideoAdapter: StreamingAdapter = {
       "[data-automation-id='title']",
       "h1[data-automation-id]",
       ".atvwebplayersdk-title-text",
-      "h1",
     ]);
   },
 
   detectIntro() {
-    return detectControl("intro", [
-      ".atvwebplayersdk-skipelement-button",
-      'button[aria-label*="Skip" i]',
-      '[class*="skipElement"] button',
-      '[class*="SkipButton"]',
-    ]);
+    return detectControl("intro", []);
   },
 
   detectRecap() {
-    return detectControl("recap", [
-      'button[aria-label*="recap" i]',
-      ".atvwebplayersdk-skipelement-button",
-    ]);
+    return detectControl("recap", []);
   },
 
   detectCredits() {
-    return detectControl("credits", [
-      ".atvwebplayersdk-nexttitle-button",
-      'button[aria-label*="Next" i]',
-      'button[aria-label*="next episode" i]',
-    ]);
+    // A generic Next Episode label can belong to the regular player toolbar.
+    return detectControl(
+      "credits",
+      [".atvwebplayersdk-nexttitle-button"],
+      [],
+      false,
+    );
   },
 
   detectStillWatching() {
     return detectControl("stillWatching", [
-      'button[aria-label*="Continue" i]',
       ".atvwebplayersdk-stillwatching-button",
     ]);
   },
 
   skipIntro(action) {
-    clickAction(action);
+    return clickAction(action);
   },
   skipRecap(action) {
-    clickAction(action);
+    return clickAction(action);
   },
   continuePlayback(action) {
-    clickAction(action);
+    return clickAction(action);
   },
 };

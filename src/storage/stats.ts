@@ -32,6 +32,34 @@ export function recordSkip(
   };
 }
 
+export function removeSkip(
+  state: AutoSkipState,
+  action: ActionType,
+): AutoSkipState {
+  const key = {
+    intro: "intros",
+    recap: "recaps",
+    credits: "credits",
+    stillWatching: "stillWatching",
+  }[action] as keyof StatsBucket;
+  const decrement = (stats: StatsBucket) =>
+    stats[key] <= 0
+      ? stats
+      : {
+          ...stats,
+          [key]: stats[key] - 1,
+          estimatedMsSaved: Math.max(
+            0,
+            stats.estimatedMsSaved - ESTIMATED_DURATION_MS[action],
+          ),
+        };
+  return {
+    ...state,
+    stats: decrement(state.stats),
+    sessionStats: decrement(state.sessionStats),
+  };
+}
+
 export function formatDuration(ms: number): string {
   const totalSeconds = Math.max(0, Math.round(ms / 1000));
   const hours = Math.floor(totalSeconds / 3600);
@@ -48,5 +76,12 @@ export function formatDuration(ms: number): string {
 }
 
 export function summarizeStats(stats: StatsBucket): string {
-  return `${stats.intros} intros · ${stats.recaps} recaps · ${stats.credits} credits`;
+  const label = (count: number, singular: string) =>
+    `${count} ${singular}${count === 1 ? "" : "s"}`;
+  return [
+    label(stats.intros, "intro"),
+    label(stats.recaps, "recap"),
+    label(stats.credits, "next episode"),
+    label(stats.stillWatching, "continuation"),
+  ].join(" · ");
 }

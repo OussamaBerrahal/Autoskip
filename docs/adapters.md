@@ -15,9 +15,9 @@ interface StreamingAdapter {
   detectRecap(): DetectedAction | null
   detectCredits(): DetectedAction | null
   detectStillWatching(): DetectedAction | null
-  skipIntro(action: DetectedAction): void
-  skipRecap(action: DetectedAction): void
-  continuePlayback(action: DetectedAction): void
+  skipIntro(action: DetectedAction): boolean
+  skipRecap(action: DetectedAction): boolean
+  continuePlayback(action: DetectedAction): boolean
 }
 ```
 
@@ -27,12 +27,14 @@ interface StreamingAdapter {
 2. Prefer `data-*` / test ids and ARIA labels over brittle class names.
 3. Always verify visibility before returning an element.
 4. Support multiple UI languages via label lists.
-5. Debounce and click-cooldowns are handled centrally — do not spam clicks inside adapters.
+5. Require a stable series title/identifier; never return an episode URL ID as a series ID. Return `null` if unsure.
+6. Return the `safeClick` result from action methods so failed clicks cannot increment statistics.
+7. Debounce and click-cooldowns are handled centrally — do not spam clicks inside adapters.
 
 ## Checklist for a new service
 
 - [ ] Adapter file under `src/adapters/<service>/`
 - [ ] Registered in `src/adapters/index.ts`
-- [ ] Host permission + content-script match patterns added
+- [ ] Content-script match patterns added; request extra permissions only if the adapter needs them
 - [ ] Unit tests for `matches()` and at least one detector
 - [ ] Support matrix updated in README

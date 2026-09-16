@@ -1,18 +1,10 @@
 {
   "manifest_version": 3,
   "name": "AutoSkip",
-  "version": "1.0.0",
-  "description": "Remembers repetitive streaming playback decisions and performs them automatically. Local-first, no account, no tracking.",
-  "permissions": ["storage", "activeTab"],
-  "host_permissions": [
-    "*://*.netflix.com/*",
-    "*://*.primevideo.com/*",
-    "*://*.amazon.com/*",
-    "*://*.amazon.co.uk/*",
-    "*://*.amazon.de/*",
-    "*://*.amazon.co.jp/*",
-    "*://*.disneyplus.com/*",
-    "*://*.tv.apple.com/*"
+  "version": "1.1.0",
+  "description": "Automatically skip intros and recaps, advance episodes, and keep watching with preferences saved only on your device.",
+  "permissions": [
+    "storage"
   ],
   "background": {
     "service_worker": "background.js",
@@ -43,15 +35,27 @@
       "matches": [
         "*://*.netflix.com/*",
         "*://*.primevideo.com/*",
-        "*://*.amazon.com/*",
-        "*://*.amazon.co.uk/*",
-        "*://*.amazon.de/*",
-        "*://*.amazon.co.jp/*",
+        "*://*.amazon.com/gp/video/*",
+        "*://*.amazon.com/video/*",
+        "*://*.amazon.com/detail/*",
+        "*://*.amazon.co.uk/gp/video/*",
+        "*://*.amazon.co.uk/video/*",
+        "*://*.amazon.co.uk/detail/*",
+        "*://*.amazon.de/gp/video/*",
+        "*://*.amazon.de/video/*",
+        "*://*.amazon.de/detail/*",
+        "*://*.amazon.co.jp/gp/video/*",
+        "*://*.amazon.co.jp/video/*",
+        "*://*.amazon.co.jp/detail/*",
         "*://*.disneyplus.com/*",
         "*://*.tv.apple.com/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "version_name": "1.1.0 alpha",
+  "minimum_chrome_version": "120"
 }

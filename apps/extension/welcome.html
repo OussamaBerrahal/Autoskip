@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to AutoSkip</title>
+    <link rel="stylesheet" href="./welcome.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./options.html"
+        ><span aria-hidden="true">⏵⏵</span> AutoSkip</a
+      ><span>Made for your next good watch.</span>
+    </header>
+    <main class="welcome">
+      <section class="intro">
+        <p class="eyebrow">WELCOME TO AUTOSKIP</p>
+        <h1>The good part.<br />A little sooner.</h1>
+        <p class="lead">
+          Skip the opening you've seen a hundred times. Stay for the story.
+        </p>
+        <div class="demo" aria-label="Example of an intro being skipped">
+          <div class="demo-top">
+            <span class="demo-pill">A QUIET ORBIT</span
+            ><span>Example player</span>
+          </div>
+          <div class="orbit" aria-hidden="true"><span></span></div>
+          <div class="demo-toast">
+            <span class="check" aria-hidden="true">✓</span> Intro skipped
+            automatically <span class="undo-demo">Undo</span>
+          </div>
+          <div class="progress" aria-hidden="true"><span></span></div>
+        </div>
+        <ul class="promises">
+          <li><strong>Your choice.</strong> Four separate switches.</li>
+          <li>
+            <strong>Changed your mind?</strong> Look for Undo after a skip.
+          </li>
+          <li><strong>Just yours.</strong> No account or tracking.</li>
+        </ul>
+      </section>
+      <section class="setup-card" aria-labelledby="setup-heading">
+        <div id="setup">
+          <p class="step">A QUICK START</p>
+          <h2 id="setup-heading">What do you watch on?</h2>
+          <p class="hint">
+            Choose the apps where you'd like to skip intros and recaps.
+          </p>
+          <form id="setup-form">
+            <fieldset id="setup-services">
+              <legend class="sr-only">Streaming apps</legend>
+            </fieldset>
+            <p class="choice-note">
+              You choose next-episode and keep-watching separately. A show's own
+              settings still take priority.
+            </p>
+            <button id="quick-start" type="submit">
+              Skip intros &amp; recaps <span aria-hidden="true">→</span>
+            </button>
+          </form>
+          <a class="skip-setup" href="./options.html">I'll choose as I watch</a>
+          <p class="small">
+            Nothing changes until you choose. You can adjust everything later.
+          </p>
+        </div>
+        <div id="complete" hidden>
+          <span class="complete-mark" aria-hidden="true">✓</span>
+          <p class="step">YOU'RE ALL SET</p>
+          <h2>Get comfortable.</h2>
+          <p class="hint" id="complete-summary"></p>
+          <ol class="next-steps">
+            <li>Pin AutoSkip in Chrome's extensions menu.</li>
+            <li>Open a show. Reload its tab if it was already open.</li>
+            <li>Use the AutoSkip icon to change choices for that show.</li>
+          </ol>
+          <a class="primary-link" href="./options.html"
+            >See my settings <span aria-hidden="true">→</span></a
+          >
+        </div>
+        <p id="setup-status" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+    <footer>Free. Open source. Quietly out of the way.</footer>
+    <script type="module" src="./welcome.ts"></script>
+  </body>
+</html>

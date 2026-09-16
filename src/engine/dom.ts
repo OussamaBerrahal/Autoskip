@@ -5,9 +5,23 @@ const recentClicks = new WeakMap<HTMLElement, number>();
 
 export function isVisible(el: Element): boolean {
   if (!(el instanceof HTMLElement)) return false;
-  const style = window.getComputedStyle(el);
-  if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+  if (
+    !el.isConnected ||
+    el.closest("[hidden], [inert], #autoskip-prompt, #autoskip-toast")
+  )
     return false;
+  for (
+    let ancestor: Element | null = el;
+    ancestor;
+    ancestor = ancestor.parentElement
+  ) {
+    const style = window.getComputedStyle(ancestor);
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      style.opacity === "0"
+    )
+      return false;
   }
   const rect = el.getBoundingClientRect();
   return rect.width > 0 && rect.height > 0;
@@ -67,23 +81,29 @@ export function toDetectedAction(
     type,
     element,
     label:
-      element.getAttribute("aria-label") ||
-      element.textContent?.trim() ||
-      type,
+      element.getAttribute("aria-label") || element.textContent?.trim() || type,
     confidence,
   };
 }
 
 export function safeClick(element: HTMLElement): boolean {
-  if (!isVisible(element)) return false;
+  if (
+    !isVisible(element) ||
+    element.matches(':disabled, [aria-disabled="true"]')
+  )
+    return false;
 
-  const last = recentClicks.get(element) ?? 0;
+  const last = recentClicks.get(element) ?? -Infinity;
   const now = Date.now();
   if (now - last < CLICK_COOLDOWN_MS) return false;
 
-  recentClicks.set(element, now);
-  element.click();
-  return true;
+  try {
+    element.click();
+    recentClicks.set(element, now);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function debounce<T extends (...args: never[]) => void>(

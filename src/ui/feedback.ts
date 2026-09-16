@@ -7,7 +7,7 @@ const PROMPT_ID = "autoskip-prompt";
 export type ToastOptions = {
   message: string;
   undoLabel?: string;
-  onUndo?: () => void;
+  onUndo?: () => void | Promise<void>;
   durationMs?: number;
 };
 
@@ -17,6 +17,8 @@ export type PromptOptions = {
   mode: "first-encounter" | "smart";
   actionType: ActionType;
   locale?: string;
+  allowSeries?: boolean;
+  serviceName?: string;
   onChoice: (choice: PromptChoice) => void;
 };
 
@@ -81,6 +83,12 @@ function ensureStyles(): void {
     }
   `;
   document.documentElement.appendChild(style);
+  document.addEventListener("fullscreenchange", () => {
+    for (const id of [TOAST_ID, PROMPT_ID]) {
+      const overlay = document.getElementById(id);
+      if (overlay) overlayRoot().appendChild(overlay);
+    }
+  });
 }
 
 export function showToast(options: ToastOptions): void {
@@ -101,13 +109,19 @@ export function showToast(options: ToastOptions): void {
     undo.type = "button";
     undo.textContent = options.undoLabel ?? "Undo";
     undo.addEventListener("click", () => {
-      options.onUndo?.();
+      undo.disabled = true;
       toast.remove();
+      void Promise.resolve(options.onUndo?.()).catch(() => {
+        showToast({
+          message:
+            "Could not save your preference. Please try again from Settings.",
+        });
+      });
     });
     toast.appendChild(undo);
   }
 
-  document.documentElement.appendChild(toast);
+  overlayRoot().appendChild(toast);
 
   window.setTimeout(() => {
     if (toast.isConnected) toast.remove();
@@ -127,7 +141,9 @@ export function showActionPrompt(options: PromptOptions): void {
 
   const message = document.createElement("span");
   message.textContent = t(
-    options.mode === "first-encounter" ? "prompt.firstEncounter" : "prompt.smart",
+    options.mode === "first-encounter"
+      ? "prompt.firstEncounter"
+      : "prompt.smart",
     locale,
     { action: noun },
   );
@@ -140,18 +156,45 @@ export function showActionPrompt(options: PromptOptions): void {
   }> =
     options.mode === "first-encounter"
       ? [
-          { label: t("prompt.skipOnce", locale), value: "once", variant: "primary" },
+          {
+            label: t("prompt.skipOnce", locale),
+            value: "once",
+            variant: "primary",
+          },
           { label: t("prompt.alwaysSeries", locale), value: "series" },
-          { label: t("prompt.alwaysService", locale), value: "service" },
-          { label: t("prompt.notNow", locale), value: "dismiss", variant: "ghost" },
+          {
+            label: t("prompt.alwaysService", locale, {
+              service: options.serviceName ?? "this streaming app",
+            }),
+            value: "service",
+          },
+          {
+            label: t("prompt.notNow", locale),
+            value: "dismiss",
+            variant: "ghost",
+          },
         ]
       : [
-          { label: t("prompt.alwaysSeries", locale), value: "series", variant: "primary" },
-          { label: t("prompt.alwaysService", locale), value: "service" },
-          { label: t("prompt.notNow", locale), value: "dismiss", variant: "ghost" },
+          {
+            label: t("prompt.alwaysSeries", locale),
+            value: "series",
+            variant: "primary",
+          },
+          {
+            label: t("prompt.alwaysService", locale, {
+              service: options.serviceName ?? "this streaming app",
+            }),
+            value: "service",
+          },
+          {
+            label: t("prompt.notNow", locale),
+            value: "dismiss",
+            variant: "ghost",
+          },
         ];
 
   for (const choice of choices) {
+    if (choice.value === "series" && options.allowSeries === false) continue;
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = choice.label;
@@ -163,37 +206,18 @@ export function showActionPrompt(options: PromptOptions): void {
     prompt.appendChild(button);
   }
 
-  document.documentElement.appendChild(prompt);
+  overlayRoot().appendChild(prompt);
 }
 
-/** @deprecated use showActionPrompt */
-export function showSmartPrompt(options: {
-  message: string;
-  onChoice: (choice: PromptChoice) => void;
-}): void {
-  ensureStyles();
+function overlayRoot(): Element {
+  const fullscreen = document.fullscreenElement;
+  return fullscreen && !(fullscreen instanceof HTMLVideoElement)
+    ? fullscreen
+    : document.documentElement;
+}
+
+export function dismissPrompt(): void {
   document.getElementById(PROMPT_ID)?.remove();
-  const prompt = document.createElement("div");
-  prompt.id = PROMPT_ID;
-  prompt.setAttribute("role", "dialog");
-  const message = document.createElement("span");
-  message.textContent = options.message;
-  prompt.appendChild(message);
-  for (const choice of [
-    { label: "Always for this series", value: "series" as const },
-    { label: "Always on this service", value: "service" as const },
-    { label: "Not now", value: "dismiss" as const },
-  ]) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = choice.label;
-    button.addEventListener("click", () => {
-      options.onChoice(choice.value);
-      prompt.remove();
-    });
-    prompt.appendChild(button);
-  }
-  document.documentElement.appendChild(prompt);
 }
 
 export function dismissOverlays(): void {

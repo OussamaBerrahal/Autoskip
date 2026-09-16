@@ -1,5 +1,10 @@
 import type { StreamingAdapter } from "../../types";
-import { clickAction, detectControl, slugTitle, titleFromSelectors } from "../shared";
+import {
+  clickAction,
+  detectControl,
+  slugTitle,
+  titleFromSelectors,
+} from "../shared";
 
 export const disneyPlusAdapter: StreamingAdapter = {
   id: "disney-plus",
@@ -10,58 +15,43 @@ export const disneyPlusAdapter: StreamingAdapter = {
   },
 
   getSeriesId() {
-    const match = window.location.pathname.match(
-      /\/(series|play|video|browse)\/([^/]+)/i,
-    );
-    return match?.[2] ?? slugTitle(this.getSeriesTitle());
+    return slugTitle(this.getSeriesTitle());
   },
 
   getSeriesTitle() {
-    return titleFromSelectors([
-      "[data-testid='title']",
-      "h1",
-      "[class*='title']",
-    ]);
+    return titleFromSelectors(["[data-testid='title']"]);
   },
 
   detectIntro() {
-    return detectControl("intro", [
-      'button[data-testid*="skip"]',
-      'button[aria-label*="Skip" i]',
-      '[class*="skip__button"]',
-      'button[class*="skip"]',
-    ]);
+    return detectControl("intro", ['button[data-testid*="skip-intro"]']);
   },
 
   detectRecap() {
-    return detectControl("recap", [
-      'button[aria-label*="recap" i]',
-      'button[data-testid*="recap"]',
-    ]);
+    return detectControl("recap", ['button[data-testid*="skip-recap"]']);
   },
 
   detectCredits() {
-    return detectControl("credits", [
-      'button[aria-label*="Next" i]',
-      'button[data-testid*="next"]',
-      'button[aria-label*="next episode" i]',
-    ]);
+    return detectControl(
+      "credits",
+      ['button[data-testid="next-episode"]'],
+      [],
+      false,
+    );
   },
 
   detectStillWatching() {
     return detectControl("stillWatching", [
-      'button[aria-label*="Continue" i]',
-      'button[data-testid*="continue"]',
+      'button[data-testid*="still-watching"]',
     ]);
   },
 
   skipIntro(action) {
-    clickAction(action);
+    return clickAction(action);
   },
   skipRecap(action) {
-    clickAction(action);
+    return clickAction(action);
   },
   continuePlayback(action) {
-    clickAction(action);
+    return clickAction(action);
   },
 };

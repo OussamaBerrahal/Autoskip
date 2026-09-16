@@ -5,6 +5,8 @@ export type MessageKey =
   | "toast.recap"
   | "toast.credits"
   | "toast.stillWatching"
+  | "toast.undone"
+  | "prompt.pause"
   | "toast.undoPaused"
   | "toast.skippedOnce"
   | "prompt.firstEncounter"
@@ -22,16 +24,19 @@ export type MessageKey =
 const EN: Record<MessageKey, string> = {
   "toast.intro": "Intro skipped automatically",
   "toast.recap": "Recap skipped automatically",
-  "toast.credits": "Credits skipped automatically",
+  "toast.credits": "Advanced to the next episode",
   "toast.stillWatching": "Continued watching automatically",
-  "toast.undoPaused": "Automation paused for this session",
+  "toast.undoPaused": "This action is paused for now",
+  "toast.undone":
+    "Returned to before the skip. This action is paused for now.",
+  "prompt.pause": "Pause this action",
   "toast.skippedOnce": "Skipped once",
   "prompt.firstEncounter": "Skip this {action}?",
   "prompt.smart": "You usually skip this {action}. Remember that preference?",
   "prompt.skipOnce": "Skip once",
-  "prompt.alwaysSeries": "Always for this series",
-  "prompt.alwaysService": "Always on this service",
-  "prompt.notNow": "Not now",
+  "prompt.alwaysSeries": "Always for this show",
+  "prompt.alwaysService": "Always on {service}",
+  "prompt.notNow": "Don’t ask again",
   "prompt.undo": "Undo",
   "action.intro": "intro",
   "action.recap": "recap",
@@ -44,9 +49,13 @@ const DE: Partial<Record<MessageKey, string>> = {
   "toast.recap": "Recap automatisch übersprungen",
   "prompt.skipOnce": "Einmal überspringen",
   "prompt.alwaysSeries": "Immer für diese Serie",
-  "prompt.alwaysService": "Immer auf diesem Dienst",
-  "prompt.notNow": "Nicht jetzt",
+  "prompt.alwaysService": "Immer auf {service}",
+  "prompt.notNow": "Nicht mehr fragen",
   "prompt.undo": "Rückgängig",
+  "prompt.pause": "Automatik pausieren",
+  "toast.undone":
+    "Zurück zur Position vor dem Sprung. Diese Aktion ist für diese Sitzung pausiert.",
+  "toast.undoPaused": "Diese Aktion ist für diese Sitzung pausiert",
   "action.intro": "Intro",
   "action.recap": "Recap",
 };
@@ -55,9 +64,13 @@ const FR: Partial<Record<MessageKey, string>> = {
   "toast.intro": "Intro ignorée automatiquement",
   "prompt.skipOnce": "Ignorer une fois",
   "prompt.alwaysSeries": "Toujours pour cette série",
-  "prompt.alwaysService": "Toujours sur ce service",
-  "prompt.notNow": "Pas maintenant",
+  "prompt.alwaysService": "Toujours sur {service}",
+  "prompt.notNow": "Ne plus demander",
   "prompt.undo": "Annuler",
+  "prompt.pause": "Suspendre l’automatisation",
+  "toast.undone":
+    "Retour avant le saut. Cette action est suspendue pour cette session.",
+  "toast.undoPaused": "Cette action est suspendue pour cette session",
   "action.intro": "intro",
   "action.recap": "résumé",
 };
@@ -66,9 +79,13 @@ const ES: Partial<Record<MessageKey, string>> = {
   "toast.intro": "Intro omitida automáticamente",
   "prompt.skipOnce": "Omitir una vez",
   "prompt.alwaysSeries": "Siempre para esta serie",
-  "prompt.alwaysService": "Siempre en este servicio",
-  "prompt.notNow": "Ahora no",
+  "prompt.alwaysService": "Siempre en {service}",
+  "prompt.notNow": "No volver a preguntar",
   "prompt.undo": "Deshacer",
+  "prompt.pause": "Pausar automatización",
+  "toast.undone":
+    "Volviste al punto anterior al salto. Esta acción se pausa durante la sesión.",
+  "toast.undoPaused": "Esta acción se pausa durante la sesión",
   "action.intro": "intro",
   "action.recap": "resumen",
 };
@@ -125,7 +142,7 @@ export const CONTROL_LABELS: Record<ActionType, string[]> = {
     "salta intro",
     "pular abertura",
     "イントロをスキップ",
-    "건너뛰기",
+    "오프닝 건너뛰기",
   ],
   recap: [
     "skip recap",
@@ -141,7 +158,6 @@ export const CONTROL_LABELS: Record<ActionType, string[]> = {
   credits: [
     "next episode",
     "skip credits",
-    "watch credits",
     "nächste folge",
     "épisode suivant",
     "siguiente episodio",
@@ -152,7 +168,6 @@ export const CONTROL_LABELS: Record<ActionType, string[]> = {
     "continue watching",
     "are you still watching",
     "yes, continue",
-    "continue",
     "weiter ansehen",
     "continuer à regarder",
     "seguir viendo",

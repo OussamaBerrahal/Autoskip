@@ -1,134 +1,247 @@
-import {
-  getSeriesRule,
-  getServiceRule,
-  setServiceEnabled,
-  upsertRule,
-} from "../../src/rules/engine";
+import { savedPreferences, isTemporarilyPaused } from "../../src/rules/engine";
 import type { ContentContextResponse } from "../../src/messaging";
-import { formatDuration, summarizeStats } from "../../src/storage/stats";
-import { loadState, updateState } from "../../src/storage/state";
-import type { ActionPreferences, ActionType, ServiceId } from "../../src/types";
-import { ACTION_TYPES, DEFAULT_PREFERENCES } from "../../src/types";
+import { loadState, seriesKey, sessionKey } from "../../src/storage/state";
+import {
+  ExtensionReloadRequired,
+  mutateState,
+} from "../../src/storage/mutations";
+import type { ActionType, ServiceId } from "../../src/types";
+import { showManager } from "./shows";
 
-const enabledInput = document.getElementById("enabled") as HTMLInputElement;
-const enabledLabel = document.getElementById("enabled-label")!;
-const serviceEnabledInput = document.getElementById("service-enabled") as HTMLInputElement;
-const serviceNameEl = document.getElementById("service-name")!;
-const seriesNameEl = document.getElementById("series-name")!;
-const sessionStatsLineEl = document.getElementById("session-stats-line")!;
-const sessionStatsSavedEl = document.getElementById("session-stats-saved")!;
-const lifetimeStatsLineEl = document.getElementById("lifetime-stats-line")!;
-const lifetimeStatsSavedEl = document.getElementById("lifetime-stats-saved")!;
-const optionsLink = document.getElementById("options-link") as HTMLAnchorElement;
-
-optionsLink.href = chrome.runtime.getURL("options.html");
-
+const $ = <T extends HTMLElement = HTMLElement>(selector: string) =>
+  document.querySelector<T>(selector)!;
+const enabledInput = $<HTMLInputElement>("#enabled");
+const scopeSelect = $<HTMLSelectElement>("#scope");
+const resetSeries = $<HTMLButtonElement>("#reset-series");
+const statusEl = $("#status");
 let activeService: ServiceId | null = null;
 let activeSeriesId: string | null = null;
 let activeSeriesTitle: string | null = null;
+let scope: "series" | "service" = "service";
+let lastContext = "";
+let refreshVersion = 0;
+const shows = showManager(document, run);
 
-async function getActiveTab(): Promise<chrome.tabs.Tab | undefined> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab;
-}
-
-async function getTabContext(tabId: number): Promise<ContentContextResponse | null> {
-  try {
-    return await chrome.tabs.sendMessage(tabId, { type: "autoskip/get-context" });
-  } catch {
-    return null;
-  }
-}
-
-function setCheckbox(scope: "service" | "series", action: ActionType, value: boolean) {
-  const input = document.querySelector<HTMLInputElement>(
-    `input[data-scope="${scope}"][data-action="${action}"]`,
-  );
-  if (input) input.checked = value;
-}
-
-function applyPreferences(
-  scope: "service" | "series",
-  prefs: ActionPreferences | undefined,
-) {
-  const values = prefs ?? DEFAULT_PREFERENCES;
-  for (const action of ACTION_TYPES) {
-    setCheckbox(scope, action, values[action]);
-  }
+for (const button of document.querySelectorAll<HTMLButtonElement>(
+  "[data-view]",
+)) {
+  button.addEventListener("click", () => {
+    for (const section of document.querySelectorAll<HTMLElement>(
+      "[data-section]",
+    ))
+      section.hidden = section.dataset.section !== button.dataset.view;
+    for (const item of document.querySelectorAll<HTMLElement>("[data-view]")) {
+      if (item === button) item.setAttribute("aria-current", "page");
+      else item.removeAttribute("aria-current");
+    }
+    statusEl.textContent = "";
+  });
 }
 
 async function refresh(): Promise<void> {
+  const version = ++refreshVersion;
   const state = await loadState();
-  enabledInput.checked = state.enabled;
-  enabledLabel.textContent = state.enabled ? "ON" : "OFF";
-
-  const tab = await getActiveTab();
-  const context = tab?.id ? await getTabContext(tab.id) : null;
-
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  let context: ContentContextResponse | null = null;
+  try {
+    if (tab?.id)
+      context = await chrome.tabs.sendMessage(tab.id, {
+        type: "autoskip/get-context",
+      });
+  } catch {
+    /* No content script on this tab. */
+  }
+  if (version !== refreshVersion) return;
+  shows.render(state);
   activeService = context?.serviceId ?? null;
   activeSeriesId = context?.seriesId ?? null;
   activeSeriesTitle = context?.seriesTitle ?? null;
-
-  serviceNameEl.textContent = context?.serviceName ?? "Unsupported page";
-  seriesNameEl.textContent = activeSeriesTitle ?? "Not detected";
-
-  if (activeService) {
-    serviceEnabledInput.disabled = false;
-    serviceEnabledInput.checked = state.services[activeService]?.enabled !== false;
-    applyPreferences("service", getServiceRule(state, activeService)?.preferences);
-    applyPreferences(
-      "series",
-      activeSeriesId
-        ? getSeriesRule(state, activeService, activeSeriesId)?.preferences
-        : DEFAULT_PREFERENCES,
-    );
-  } else {
-    serviceEnabledInput.disabled = true;
-    serviceEnabledInput.checked = false;
-    applyPreferences("service", DEFAULT_PREFERENCES);
-    applyPreferences("series", DEFAULT_PREFERENCES);
+  const name = context?.serviceName ?? "";
+  const paused = isTemporarilyPaused(state);
+  const minutes = Math.max(
+    1,
+    Math.ceil((state.pausedUntil - Date.now()) / 60000),
+  );
+  $("#snooze").textContent = paused ? "Resume AutoSkip" : "Pause for 30 min";
+  $("#snooze").hidden = !state.enabled;
+  $("#global-pause").hidden = !paused || !state.enabled;
+  $("#global-pause").textContent = `Paused · resumes in ${minutes} min`;
+  enabledInput.checked = state.enabled;
+  $("#enabled-label").textContent = state.enabled
+    ? paused
+      ? "Paused"
+      : "On"
+    : "Off";
+  $("#empty").hidden = Boolean(activeService);
+  $("#player-settings").hidden = !activeService;
+  if (!activeService) {
+    lastContext = "";
+    return;
   }
-
-  sessionStatsLineEl.textContent = summarizeStats(state.sessionStats);
-  sessionStatsSavedEl.textContent = `~${formatDuration(state.sessionStats.estimatedMsSaved)} saved`;
-  lifetimeStatsLineEl.textContent = summarizeStats(state.stats);
-  lifetimeStatsSavedEl.textContent = `~${formatDuration(state.stats.estimatedMsSaved)} saved`;
-}
-
-enabledInput.addEventListener("change", () => {
-  void updateState((state) => ({ ...state, enabled: enabledInput.checked })).then(refresh);
-});
-
-serviceEnabledInput.addEventListener("change", () => {
-  void (async () => {
-    if (!activeService) return;
-    await updateState((state) =>
-      setServiceEnabled(state, activeService!, serviceEnabledInput.checked),
+  $("#service-name").textContent = name;
+  $("#series-name").textContent = activeSeriesTitle ?? `Watching on ${name}`;
+  const series = activeSeriesId
+    ? state.seriesRules[seriesKey(activeService, activeSeriesId)]
+    : undefined;
+  const nextContext = `${activeService}::${activeSeriesId}`;
+  if (lastContext !== nextContext) scope = series ? "series" : "service";
+  lastContext = nextContext;
+  if (!activeSeriesId) scope = "service";
+  scopeSelect.replaceChildren(new Option(`All ${name} shows`, "service"));
+  if (activeSeriesId)
+    scopeSelect.add(
+      new Option(`Only ${activeSeriesTitle ?? "this show"}`, "series"),
     );
-    await refresh();
-  })();
-});
-
-document.querySelectorAll<HTMLInputElement>("input[data-scope][data-action]").forEach((input) => {
-  input.addEventListener("change", () => {
-    void (async () => {
-      if (!activeService) return;
-      const scope = input.dataset.scope as "service" | "series";
-      const action = input.dataset.action as ActionType;
-
-      await updateState((state) =>
-        upsertRule(
-          state,
-          scope === "series" && !activeSeriesId ? "service" : scope,
-          activeService!,
-          activeSeriesId,
-          activeSeriesTitle,
-          { [action]: input.checked },
-        ),
-      );
+  scopeSelect.value = scope;
+  const serviceEnabled = state.services[activeService].enabled;
+  $("#disabled-notice").hidden = state.enabled && serviceEnabled;
+  $("#disabled-message").textContent = !state.enabled
+    ? "AutoSkip is off. Turn it on above to use your choices."
+    : `AutoSkip is off for ${name}.`;
+  $("#service-enabled").hidden = !state.enabled || serviceEnabled;
+  $("#service-enabled").textContent = `Turn on for ${name}`;
+  const effective = savedPreferences(
+    state,
+    activeService,
+    scope === "series" ? activeSeriesId : null,
+  );
+  $<HTMLFieldSetElement>("#choices").disabled =
+    !state.enabled || !serviceEnabled;
+  for (const input of document.querySelectorAll<HTMLInputElement>(
+    "#choices input[data-action]",
+  )) {
+    input.checked = effective[input.dataset.action as ActionType];
+  }
+  resetSeries.hidden = !series || scope !== "series";
+  resetSeries.textContent = `Use my ${name} settings`;
+  $("#scope-hint").textContent =
+    series && scope === "service"
+      ? `${activeSeriesTitle ?? "This show"} has its own choices. Select it above to change them.`
+      : "";
+  const session = state.sessionRules[sessionKey(activeService, activeSeriesId)];
+  const pausedActions = Object.entries(session?.preferences ?? {})
+    .filter(([, value]) => value === false)
+    .map(
+      ([action]) =>
+        ({
+          intro: "Intro skipping",
+          recap: "Recap skipping",
+          credits: "Next episode",
+          stillWatching: "Keep watching",
+        })[action],
+    );
+  $("#pause-notice").hidden = pausedActions.length === 0;
+  $("#pause-hint").textContent =
+    `${pausedActions.join(", ")} ${pausedActions.length === 1 ? "is" : "are"} paused for now.`;
+}
+function run(action: () => Promise<unknown>, success = "") {
+  statusEl.textContent = "";
+  statusEl.classList.remove("error");
+  void action()
+    .then(async () => {
       await refresh();
-    })();
-  });
+      statusEl.textContent = success;
+    })
+    .catch((error) => {
+      statusEl.classList.add("error");
+      statusEl.textContent =
+        error instanceof ExtensionReloadRequired
+          ? error.message
+          : "Couldn't save that change. Please try again.";
+    });
+}
+enabledInput.addEventListener("change", () =>
+  run(() =>
+    mutateState({
+      kind: "settings",
+      patch: { enabled: enabledInput.checked, pausedUntil: 0 },
+    }),
+  ),
+);
+scopeSelect.addEventListener("change", () => {
+  const previousScope = scope;
+  scope = scopeSelect.value as typeof scope;
+  const serviceId = activeService,
+    seriesId = activeSeriesId,
+    seriesTitle = activeSeriesTitle;
+  if (scope === "series" && serviceId && seriesId) {
+    run(async () => {
+      try {
+        return await mutateState({
+          kind: "save-series",
+          serviceId,
+          seriesId,
+          seriesTitle,
+        });
+      } catch (error) {
+        scope = previousScope;
+        scopeSelect.value = scope;
+        throw error;
+      }
+    });
+  } else void refresh();
 });
-
+$("#service-enabled").addEventListener("click", () => {
+  if (activeService) {
+    const serviceId = activeService;
+    run(() => mutateState({ kind: "service", serviceId, enabled: true }));
+  }
+});
+$("#resume-session").addEventListener("click", () => {
+  const serviceId = activeService,
+    seriesId = activeSeriesId;
+  if (serviceId)
+    run(() => mutateState({ kind: "clear-session", serviceId, seriesId }));
+});
+resetSeries.addEventListener("click", () => {
+  const serviceId = activeService,
+    seriesId = activeSeriesId;
+  if (serviceId && seriesId) {
+    scope = "service";
+    run(() => mutateState({ kind: "clear-series", serviceId, seriesId }));
+  }
+});
+for (const input of document.querySelectorAll<HTMLInputElement>(
+  "#choices input[data-action]",
+)) {
+  input.addEventListener("change", () => {
+    const serviceId = activeService,
+      seriesId = activeSeriesId,
+      seriesTitle = activeSeriesTitle,
+      selectedScope = scope;
+    if (!serviceId || (selectedScope === "series" && !seriesId)) return;
+    const checked = input.checked;
+    run(() =>
+      mutateState({
+        kind: "rule",
+        scope: selectedScope,
+        serviceId,
+        seriesId,
+        seriesTitle,
+        patch: { [input.dataset.action as ActionType]: checked },
+      }),
+    );
+  });
+}
+$("#options-link").addEventListener("click", (event) => {
+  event.preventDefault();
+  void chrome.runtime.openOptionsPage();
+});
+$("#snooze").addEventListener("click", () =>
+  run(async () => {
+    const state = await loadState();
+    await mutateState({
+      kind: "settings",
+      patch: {
+        pausedUntil: isTemporarilyPaused(state) ? 0 : Date.now() + 30 * 60000,
+      },
+    });
+  }),
+);
+window.setInterval(() => {
+  void refresh();
+}, 30000);
+chrome.storage.onChanged.addListener(() => {
+  void refresh();
+});
 void refresh();

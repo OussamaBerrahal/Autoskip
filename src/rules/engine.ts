@@ -11,12 +11,35 @@ import { seriesKey, sessionKey } from "../storage/state";
 
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 
+/** Show saved choices even when playback is disabled or temporarily paused. */
+export function savedPreferences(
+  state: AutoSkipState,
+  serviceId: ServiceId,
+  seriesId: string | null,
+): ActionPreferences {
+  return resolvePreferences(
+    {
+      ...state,
+      enabled: true,
+      pausedUntil: 0,
+      sessionRules: {},
+      services: { ...state.services, [serviceId]: { enabled: true } },
+    },
+    serviceId,
+    seriesId,
+  );
+}
+
 export function resolvePreferences(
   state: AutoSkipState,
   serviceId: ServiceId,
   seriesId: string | null,
 ): ActionPreferences {
-  if (!state.enabled || state.services[serviceId]?.enabled === false) {
+  if (
+    !state.enabled ||
+    isTemporarilyPaused(state) ||
+    state.services[serviceId]?.enabled === false
+  ) {
     return { ...DEFAULT_PREFERENCES };
   }
 
@@ -24,7 +47,11 @@ export function resolvePreferences(
   const series = seriesId
     ? state.seriesRules[seriesKey(serviceId, seriesId)]?.preferences
     : undefined;
-  const session = state.sessionRules[sessionKey(serviceId, seriesId)]?.preferences;
+  const sessionRule = state.sessionRules[sessionKey(serviceId, seriesId)];
+  const session =
+    !sessionRule?.expiresAt || sessionRule.expiresAt > Date.now()
+      ? sessionRule?.preferences
+      : undefined;
 
   return {
     intro: session?.intro ?? series?.intro ?? service?.intro ?? false,
@@ -62,7 +89,7 @@ export function upsertRule(
     const existing = next.serviceRules[serviceId];
     next.serviceRules[serviceId] = {
       serviceId,
-      preferences: { ...(existing?.preferences ?? DEFAULT_PREFERENCES), ...patch },
+      preferences: { ...existing?.preferences, ...patch },
       updatedAt: Date.now(),
     };
     return next;
@@ -70,7 +97,7 @@ export function upsertRule(
 
   if (scope === "series") {
     if (!seriesId) {
-      return upsertRule(state, "service", serviceId, null, null, patch);
+      return state;
     }
     const key = seriesKey(serviceId, seriesId);
     const existing = next.seriesRules[key];
@@ -78,7 +105,7 @@ export function upsertRule(
       serviceId,
       seriesId,
       seriesTitle: seriesTitle ?? existing?.seriesTitle,
-      preferences: { ...(existing?.preferences ?? DEFAULT_PREFERENCES), ...patch },
+      preferences: { ...existing?.preferences, ...patch },
       updatedAt: Date.now(),
     };
     return next;
@@ -90,7 +117,7 @@ export function upsertRule(
     serviceId,
     seriesId: seriesId ?? undefined,
     seriesTitle: seriesTitle ?? existing?.seriesTitle,
-    preferences: { ...(existing?.preferences ?? DEFAULT_PREFERENCES), ...patch },
+    preferences: { ...existing?.preferences, ...patch },
     updatedAt: Date.now(),
     expiresAt: Date.now() + SESSION_TTL_MS,
   };
@@ -134,4 +161,8 @@ export function getSeriesRule(
   seriesId: string,
 ): RuleSet | undefined {
   return state.seriesRules[seriesKey(serviceId, seriesId)];
+}
+
+export function isTemporarilyPaused(state: AutoSkipState): boolean {
+  return state.pausedUntil > Date.now();
 }

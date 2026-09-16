@@ -9,65 +9,179 @@
   <body>
     <main class="shell">
       <header class="header">
-        <div>
-          <p class="brand">AutoSkip</p>
-          <p class="tagline">You decide once. AutoSkip remembers.</p>
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">⏵⏵</span>AutoSkip
         </div>
-        <label class="switch" title="Enable AutoSkip">
-          <input id="enabled" type="checkbox" />
-          <span id="enabled-label">ON</span>
+        <label class="master toggle">
+          <span id="enabled-label">On</span>
+          <input
+            id="enabled"
+            type="checkbox"
+            role="switch"
+            aria-label="AutoSkip"
+          />
+          <span class="track" aria-hidden="true"></span>
         </label>
       </header>
-
-      <section class="panel" id="context-panel">
-        <div class="row">
-          <span class="muted" id="service-label">Service</span>
-          <div class="row-end">
-            <strong id="service-name">—</strong>
-            <label class="mini-switch" title="Enable on this service">
-              <input id="service-enabled" type="checkbox" />
-            </label>
+      <nav class="view-nav" aria-label="AutoSkip views">
+        <button type="button" data-view="watching" aria-current="page">
+          Watching
+        </button>
+        <button type="button" data-view="shows">
+          Your shows <span id="show-count">0</span>
+        </button>
+      </nav>
+      <p id="global-pause" class="global-pause" role="status" hidden></p>
+      <p id="status" class="notice" role="status"></p>
+      <div data-section="watching">
+        <section id="empty" class="empty" hidden>
+          <span class="empty-icon" aria-hidden="true">▶</span>
+          <h1>Ready when you are.</h1>
+          <p>Open a show on Netflix, Prime Video, Disney+ or Apple TV.</p>
+          <p class="small">Just installed or updated? Reload the show's tab.</p>
+        </section>
+        <section id="player-settings" hidden>
+          <div class="watching">
+            <p class="eyebrow">
+              <span class="dot" aria-hidden="true"></span
+              ><span id="service-name">Netflix</span>
+            </p>
+            <h1 id="series-name">Your next good watch.</h1>
+            <p class="subtitle">Less clicking. More watching.</p>
           </div>
+          <div id="disabled-notice" class="notice" hidden>
+            <span id="disabled-message"></span>
+            <button
+              id="service-enabled"
+              class="text-button"
+              type="button"
+              hidden
+            >
+              Turn on
+            </button>
+          </div>
+          <div class="scope-row">
+            <label for="scope">Apply to</label>
+            <select id="scope" aria-label="Apply these choices to"></select>
+          </div>
+          <fieldset id="choices">
+            <legend class="sr-only">Automatic actions</legend>
+            <label class="choice toggle">
+              <span class="choice-copy"
+                ><span id="intro-label" class="choice-title">Skip intros</span
+                ><span id="intro-help" class="description"
+                  >Go straight to the story.</span
+                ></span
+              >
+              <input
+                type="checkbox"
+                role="switch"
+                data-action="intro"
+                aria-labelledby="intro-label"
+                aria-describedby="intro-help"
+              />
+              <span class="track" aria-hidden="true"></span>
+            </label>
+            <label class="choice toggle">
+              <span class="choice-copy"
+                ><span id="recap-label" class="choice-title">Skip recaps</span
+                ><span id="recap-help" class="description"
+                  >Skip the “previously on…” part.</span
+                ></span
+              >
+              <input
+                type="checkbox"
+                role="switch"
+                data-action="recap"
+                aria-labelledby="recap-label"
+                aria-describedby="recap-help"
+              />
+              <span class="track" aria-hidden="true"></span>
+            </label>
+            <label class="choice toggle">
+              <span class="choice-copy"
+                ><span id="credits-label" class="choice-title"
+                  >Play next episode</span
+                ><span id="credits-help" class="description"
+                  >Move on when this episode is ending.</span
+                ></span
+              >
+              <input
+                type="checkbox"
+                role="switch"
+                data-action="credits"
+                aria-labelledby="credits-label"
+                aria-describedby="credits-help"
+              />
+              <span class="track" aria-hidden="true"></span>
+            </label>
+            <label class="choice toggle">
+              <span class="choice-copy"
+                ><span id="stillWatching-label" class="choice-title"
+                  >Keep watching</span
+                ><span id="stillWatching-help" class="description"
+                  >Answer “Are you still watching?” for you.</span
+                ></span
+              >
+              <input
+                type="checkbox"
+                role="switch"
+                data-action="stillWatching"
+                aria-labelledby="stillWatching-label"
+                aria-describedby="stillWatching-help"
+              />
+              <span class="track" aria-hidden="true"></span>
+            </label>
+          </fieldset>
+          <button
+            id="reset-series"
+            class="text-button reset"
+            type="button"
+            hidden
+          >
+            Use my Netflix settings
+          </button>
+          <p id="scope-hint" class="small scope-hint"></p>
+          <div id="pause-notice" class="notice" hidden>
+            <span id="pause-hint"></span>
+            <button id="resume-session" class="text-button" type="button">
+              Resume
+            </button>
+          </div>
+        </section>
+      </div>
+      <section data-section="shows" hidden>
+        <div class="shows-heading">
+          <h1>Your shows</h1>
+          <p class="small">
+            Changes save automatically. Tap a show to edit.
+          </p>
         </div>
-        <div class="row">
-          <span class="muted">Current series</span>
-          <strong id="series-name">Not detected</strong>
+        <div class="show-filters">
+          <input
+            id="show-search"
+            type="search"
+            aria-label="Find a show"
+            placeholder="Find a show…"
+          />
+          <select id="show-service" aria-label="Filter by streaming app">
+            <option value="all">All apps</option>
+          </select>
         </div>
-
-        <div class="rules" id="series-rules" aria-label="Current series rules">
-          <label><input type="checkbox" data-scope="series" data-action="intro" /> Skip intros</label>
-          <label><input type="checkbox" data-scope="series" data-action="recap" /> Skip recaps</label>
-          <label><input type="checkbox" data-scope="series" data-action="credits" /> Skip credits</label>
-          <label><input type="checkbox" data-scope="series" data-action="stillWatching" /> Still watching</label>
-        </div>
+        <p id="shows-empty" class="small"></p>
+        <div id="shows"></div>
       </section>
-
-      <section class="panel">
-        <h2>Service defaults</h2>
-        <div class="rules" id="service-rules" aria-label="Service default rules">
-          <label><input type="checkbox" data-scope="service" data-action="intro" /> Skip intros</label>
-          <label><input type="checkbox" data-scope="service" data-action="recap" /> Skip recaps</label>
-          <label><input type="checkbox" data-scope="service" data-action="credits" /> Skip credits</label>
-          <label><input type="checkbox" data-scope="service" data-action="stillWatching" /> Still watching</label>
-        </div>
-      </section>
-
-      <section class="panel stats">
-        <h2>This session</h2>
-        <p id="session-stats-line">0 intros skipped</p>
-        <p class="muted" id="session-stats-saved">~0s saved</p>
-        <hr />
-        <h2>Lifetime</h2>
-        <p id="lifetime-stats-line">0 intros · 0 recaps · 0 credits</p>
-        <p class="muted" id="lifetime-stats-saved">~0s saved</p>
-      </section>
-
       <footer class="footer">
-        <a id="options-link" href="./options.html" target="_blank" rel="noreferrer">Options</a>
-        <span>·</span>
-        <a href="https://github.com/OussamaBerrahal/Autoskip" target="_blank" rel="noreferrer">Source</a>
-        <span>·</span>
-        <span>Local-first</span>
+        <button id="snooze" class="text-button" type="button">
+          Pause for 30 min
+        </button>
+        <a
+          id="options-link"
+          href="./options.html"
+          target="_blank"
+          rel="noreferrer"
+          >Settings <span aria-hidden="true">↗</span></a
+        >
       </footer>
     </main>
     <script type="module" src="./popup.ts"></script>

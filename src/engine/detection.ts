@@ -6,7 +6,9 @@ export type DetectionResult = {
   adapter: StreamingAdapter;
 };
 
-export function detectAnyAction(adapter: StreamingAdapter): DetectionResult | null {
+export function detectAnyAction(
+  adapter: StreamingAdapter,
+): DetectionResult | null {
   const detectors: Array<() => DetectedAction | null> = [
     () => adapter.detectIntro(),
     () => adapter.detectRecap(),
@@ -30,15 +32,12 @@ export function performAction(
 ): boolean {
   switch (action.type) {
     case "intro":
-      adapter.skipIntro(action);
-      return true;
+      return adapter.skipIntro(action);
     case "recap":
-      adapter.skipRecap(action);
-      return true;
+      return adapter.skipRecap(action);
     case "credits":
     case "stillWatching":
-      adapter.continuePlayback(action);
-      return true;
+      return adapter.continuePlayback(action);
     default:
       return false;
   }
