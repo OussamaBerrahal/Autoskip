@@ -1,7 +1,10 @@
 import { savedPreferences, isTemporarilyPaused } from "../../src/rules/engine";
 import type { ContentContextResponse } from "../../src/messaging";
 import { loadState, seriesKey, sessionKey } from "../../src/storage/state";
-import { mutateState } from "../../src/storage/mutations";
+import {
+  ExtensionReloadRequired,
+  mutateState,
+} from "../../src/storage/mutations";
 import type { ActionType, ServiceId } from "../../src/types";
 import { showManager } from "./shows";
 
@@ -139,9 +142,12 @@ function run(action: () => Promise<unknown>, success = "") {
       await refresh();
       statusEl.textContent = success;
     })
-    .catch(() => {
+    .catch((error) => {
       statusEl.classList.add("error");
-      statusEl.textContent = "Couldn't save that change. Please try again.";
+      statusEl.textContent =
+        error instanceof ExtensionReloadRequired
+          ? error.message
+          : "Couldn't save that change. Please try again.";
     });
 }
 enabledInput.addEventListener("change", () =>
@@ -153,14 +159,26 @@ enabledInput.addEventListener("change", () =>
   ),
 );
 scopeSelect.addEventListener("change", () => {
+  const previousScope = scope;
   scope = scopeSelect.value as typeof scope;
   const serviceId = activeService,
     seriesId = activeSeriesId,
     seriesTitle = activeSeriesTitle;
   if (scope === "series" && serviceId && seriesId) {
-    run(() =>
-      mutateState({ kind: "save-series", serviceId, seriesId, seriesTitle }),
-    );
+    run(async () => {
+      try {
+        return await mutateState({
+          kind: "save-series",
+          serviceId,
+          seriesId,
+          seriesTitle,
+        });
+      } catch (error) {
+        scope = previousScope;
+        scopeSelect.value = scope;
+        throw error;
+      }
+    });
   } else void refresh();
 });
 $("#service-enabled").addEventListener("click", () => {

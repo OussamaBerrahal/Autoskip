@@ -732,3 +732,57 @@ for (const service of playbackServices) {
     expect((await h.read()).serviceRules).toEqual(state.serviceRules);
   });
 }
+
+test("unsupported updates preserve preferences and the worker accepts the next change", async () => {
+  const state = structuredClone(DEFAULT_STATE);
+  state.serviceRules.netflix = {
+    serviceId: "netflix",
+    preferences: { intro: true },
+    updatedAt: Date.now(),
+  };
+  await h.seed(state);
+  const page = await h.context.newPage();
+  await page.goto(`chrome-extension://${h.id}/options.html`);
+  const result = await page.evaluate(async () => {
+    const rejected = await chrome.runtime.sendMessage({
+      type: "autoskip/mutate",
+      mutation: { kind: "future-operation" },
+    });
+    const accepted = await chrome.runtime.sendMessage({
+      type: "autoskip/mutate",
+      mutation: { kind: "settings", patch: { debugLogging: true } },
+    });
+    return { rejected, accepted: accepted.ok };
+  });
+  expect(result.rejected.ok).toBe(false);
+  expect(result.accepted).toBe(true);
+  expect(await h.read()).toEqual({ ...state, debugLogging: true });
+});
+
+test("an outdated worker leaves show choices unchanged and explains how to reload", async () => {
+  const player = await h.player({ action: "credits" });
+  const popup = await h.context.newPage();
+  await popup.goto(`chrome-extension://${h.id}/popup.html`);
+  await player.bringToFront();
+  await h.seed({ ...(await h.read()), locale: "en" });
+  await expect(popup.locator("#scope")).toHaveValue("service");
+  const before = await h.read();
+  // Reproduce an old worker's missing handler at the message boundary.
+  await popup.evaluate(() => {
+    const send = chrome.runtime.sendMessage.bind(chrome.runtime);
+    chrome.runtime.sendMessage = ((message: any) =>
+      message.type === "autoskip/save-series"
+        ? Promise.resolve(undefined)
+        : send(message)) as typeof chrome.runtime.sendMessage;
+  });
+  await popup.locator("#scope").evaluate((el: HTMLSelectElement) => {
+    el.value = "series";
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(popup.locator("#status")).toContainText(
+    "Reload it in Chrome’s Extensions page",
+  );
+  await expect(popup.locator("#scope")).toHaveValue("service");
+  await expect(popup.locator("#show-count")).toHaveText("0");
+  expect(await h.read()).toEqual(before);
+});

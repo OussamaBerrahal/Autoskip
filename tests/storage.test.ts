@@ -164,3 +164,11 @@ it("saving a show captures persistent choices, preserves existing rules, and nev
   expect(saved.serviceRules).toEqual(state.serviceRules);
   expect(saved.sessionRules).toEqual(state.sessionRules);
 });
+
+it("rejects an unknown mutation instead of returning an empty replacement state", () => {
+  const state = structuredClone(DEFAULT_STATE);
+  expect(() =>
+    applyMutation(state, { kind: "future-operation" } as never),
+  ).toThrow("Unsupported AutoSkip preference change");
+  expect(state).toEqual(DEFAULT_STATE);
+});

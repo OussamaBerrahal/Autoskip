@@ -21,6 +21,7 @@ For a fresh checkout: `npm ci && npm run build`.
 - In **Your shows**, search/filter, open Friends, change any of its four choices, then choose **Remove show settings**. Friends disappears and follows your Netflix defaults; other shows and apps stay unchanged. Check the same list in Settings.
 - Click **Pause for 30 min**. All AutoSkip actions/prompts pause; **Resume AutoSkip** restores saved choices. Turning **Off** remains off without a timer.
 - Check light/dark appearance and keyboard navigation. The ordinary popup should fit without scrolling.
+- If the popup asks you to reload after an unpacked update, the attempted show save should leave your existing choices unchanged. Reload AutoSkip and the streaming tab, then retry.
 - Save a backup, restore it, and verify show choices and counts survive. Cancelling a restore leaves data intact.
 
 ## Friends regression checks
@@ -80,7 +81,7 @@ If a control is missed, note the service, action, UI language, Chrome version, a
 
 ## Live evidence recorded
 
-On 2026-09-15 the owner confirmed that the Netflix/Friends repeated-advance fix works after reloading 1.1.0 alpha. Earlier live feedback confirmed intro skipping and the Undo notification. This does not mark every Netflix scenario above as complete. Prime Video and Disney+ have no live pass recorded yet.
+On 2026-09-15 the owner confirmed that the Netflix/Friends repeated-advance fix works after reloading 1.1.0 alpha. Earlier live feedback confirmed intro skipping and the Undo notification. This does not mark every Netflix scenario above as complete. Prime Video and Disney+ have no live pass recorded yet. On 2026-09-16 both services were opened in Chrome and required sign-in; live playback is waiting for the owner to sign in and open episodes.
 
 ## What is already automated
 

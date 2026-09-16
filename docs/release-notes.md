@@ -11,16 +11,17 @@ A simpler, more complete viewing companion, including the fix for repeated Netfl
 - **Your shows:** **Only Friends** saves immediately. The popup now has a **Your shows** view with a count, search, app filter, editing, and removal that restores app defaults. The same list is available in Settings, including when no player is open.
 - **Take a break:** pause AutoSkip for 30 minutes and resume automatically, or turn it off until you choose to turn it on.
 - **A calmer interface:** system light/dark appearance, keyboard-friendly forms, narrow-window layouts, clear help, and backup/restore that preserves show choices and counts.
+- **Safe updates:** if an unpacked popup is newer than its background process, saving a show leaves existing choices intact and explains how to reload. Unsupported changes cannot replace the saved state.
 - **Local and lightweight:** no accounts, tracking, new permissions, backend, or remote code.
 
 ## Verification
 
-- 41 unit/fixture tests and 52 installed Chromium extension scenarios pass (93 total).
+- 44 unit/fixture tests and 54 installed Chromium extension scenarios (98 total); hosted verification is tracked on draft PR #2.
 - TypeScript, production build, content-script syntax, runtime assets, and package checks pass.
 - The browser suite runs matching playback regressions on Netflix, Prime Video, and Disney+ fixtures, including rewind, episode-loop prevention, fullscreen, and saved-show creation/editing/removal. It also covers consent, saved-show keyboard editing, temporary pause expiry, and real downloaded backup/restore/cancel.
 - Interface previews use the actual extension with a clearly labelled simulated player and generated media.
 
-The owner reported live intro skipping and Undo feedback working. Read-only Netflix inspection identified the old toolbar/title issues. After reloading the build, the owner confirmed that the Netflix repeated-advance fix works. Other Netflix action/fullscreen checks and live Prime Video/Disney+ validation remain pending. Simulated player tests do not establish current DRM-player compatibility.
+The owner reported live intro skipping and Undo feedback working. Read-only Netflix inspection identified the old toolbar/title issues. After reloading the build, the owner confirmed that the Netflix repeated-advance fix works. Other Netflix action/fullscreen checks and live Prime Video/Disney+ validation remain pending. On 2026-09-16, both live sites required account sign-in; the owner’s login tabs were left ready. Simulated player tests do not establish current DRM-player compatibility.
 
 ## Install or update
 

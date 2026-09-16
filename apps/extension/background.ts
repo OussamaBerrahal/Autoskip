@@ -22,7 +22,11 @@ chrome.runtime.onStartup.addListener(() => {
 });
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return false;
-  if (message?.type === "autoskip/mutate") {
+  if (
+    message?.type === "autoskip/mutate" ||
+    (message?.type === "autoskip/save-series" &&
+      message.mutation?.kind === "save-series")
+  ) {
     enqueue(message.mutation).then(
       (state) => sendResponse({ ok: true, state }),
       (error) => sendResponse({ ok: false, error: String(error) }),

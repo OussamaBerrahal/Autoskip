@@ -53,3 +53,11 @@ Version 1.1.0 alpha: 38 unit/fixture checks and 27 installed-browser checks pass
 ### Milestone 4 evidence
 
 41 unit/fixture tests and all 52 installed-extension scenarios pass locally. An older popup test needed its selector scoped to Watching after the addition of the separate saved-show editor. The final popup checks verify immediate save, persistence, same-name/app isolation, all four editable choices, deletion, and a single-show editor within 600px. The Watching popup with a saved show is 582px high. Previews and the 1.1.0 ZIP match this build; the alpha release remains a draft pending live tests.
+
+## Follow-up — Safe unpacked updates and live access (2026-09-16)
+
+- The connected Netflix popup displays Watching / Your shows and recognises Friends. Its current scope is All Netflix shows; the saved-show count is zero. This was inspected without changing preferences or playback.
+- Opened Prime Video and Disney+ in the Chrome group **AutoSkip live tests**. Both require account sign-in; their login tabs are left ready for the owner. No live playback pass is claimed.
+- Hardened mixed-version unpacked updates: the new save-show operation uses a separate message that older workers safely ignore, instead of reaching their unknown-mutation path. The popup explains how to reload and restores its prior scope when the save fails.
+- Unsupported mutations now reject before any state is written, and the worker queue still accepts the next valid change.
+- Targeted installed-extension checks cover normal saving on all three services, concurrent saves, unknown operations, and the stale-worker reload message. The suite now contains 44 unit/fixture checks and 54 browser scenarios; full hosted verification is tracked on PR #2.

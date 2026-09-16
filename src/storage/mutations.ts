@@ -145,6 +145,18 @@ export function applyMutation(
     }
     case "import":
       return validateImport(mutation.state);
+    default:
+      // A newer UI must never turn an unsupported operation into an empty state.
+      throw new Error("Unsupported AutoSkip preference change");
+  }
+}
+
+export class ExtensionReloadRequired extends Error {
+  constructor() {
+    super(
+      "AutoSkip was updated. Reload it in Chrome’s Extensions page, then reload your show.",
+    );
+    this.name = "ExtensionReloadRequired";
   }
 }
 
@@ -152,10 +164,20 @@ export function applyMutation(
 export async function mutateState(
   mutation: StateMutation,
 ): Promise<AutoSkipState> {
-  const result = await chrome.runtime.sendMessage({
-    type: "autoskip/mutate",
-    mutation,
-  });
+  const savesShow = mutation.kind === "save-series";
+  let result;
+  try {
+    result = await chrome.runtime.sendMessage({
+      // Legacy workers ignore this new message instead of dispatching an unknown
+      // mutation. This matters when an unpacked popup updates before its worker.
+      type: savesShow ? "autoskip/save-series" : "autoskip/mutate",
+      mutation,
+    });
+  } catch (error) {
+    if (savesShow) throw new ExtensionReloadRequired();
+    throw error;
+  }
+  if (savesShow && !result) throw new ExtensionReloadRequired();
   if (!result?.ok)
     throw new Error(result?.error ?? "Could not save AutoSkip preferences");
   return result.state;
